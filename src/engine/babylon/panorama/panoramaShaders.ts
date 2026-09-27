@@ -13,6 +13,10 @@
  * sampled with (x, z, y): the format's faces are WebGPU's with Y and Z
  * exchanged (GPU_LAYER_SOURCE_FACES).
  *
+ * An outline, when there is one, is a ring `outlineWidth` rendered pixels
+ * wide just outside the silhouette, measured along the gradient of sin δ;
+ * the probes' outputs leave it out, so they cover the image alone.
+ *
  * Every texture is sampled once, outside any branch, so derivatives are
  * taken in uniform control flow from rays that are all finite. Textures are
  * rgba8unorm-srgb, so samples arrive in linear light; blending between two
@@ -71,6 +75,8 @@ uniform markerRel : vec3<f32>;
 uniform radius : f32;
 uniform tanPreviewHalfAngle : f32;
 uniform opacity : f32;
+uniform outlineColor : vec4<f32>;
+uniform outlineWidth : f32;
 ${CONTENT_UNIFORMS}
 var panoramaCube : texture_cube<f32>;
 var panoramaCubeSampler : sampler;
@@ -94,8 +100,13 @@ fn main(input : FragmentInputs) -> FragmentOutputs {
   // Coverage: the cap sin δ < sin α on the near side, with a one-pixel edge.
   let edge = sinAlpha - sinDelta;
   let edgeWidth = max(fwidth(sinDelta), 1e-7);
-  let exterior = clamp(edge / edgeWidth + 0.5, 0.0, 1.0) * select(0.0, 1.0, c > 0.0);
+  let front = select(0.0, 1.0, c > 0.0);
+  let exterior = clamp(edge / edgeWidth + 0.5, 0.0, 1.0) * front;
   let coverage = select(exterior, 1.0, inside);
+  // The outline's share of the pixel: out to its width beyond the edge, none from inside.
+  let pixelStep = max(length(vec2<f32>(dpdx(sinDelta), dpdy(sinDelta))), 1e-9);
+  let ringOuter = clamp(edge / pixelStep + uniforms.outlineWidth + 0.5, 0.0, 1.0) * front;
+  let ring = select(max(ringOuter - exterior, 0.0), 0.0, inside) * uniforms.outlineColor.a;
 
   // The flat window; identity inside and once α ≥ βR. Finite for every ray.
   let gain = uniforms.tanPreviewHalfAngle / max(tanAlpha, 1e-7);
@@ -111,16 +122,24 @@ fn main(input : FragmentInputs) -> FragmentOutputs {
   let t = select(b - root, b + root, inside);
   let clip = uniforms.viewRotProj * vec4<f32>(v * max(t, 0.0), 1.0);
 
+#ifdef OUTPUT_DIRECTION
   if (coverage <= 0.0) {
     discard;
   }
-#ifdef OUTPUT_DIRECTION
   fragmentOutputs.color = vec4<f32>(image, coverage);
 #else
 #ifdef OUTPUT_RAY
+  if (coverage <= 0.0) {
+    discard;
+  }
   fragmentOutputs.color = vec4<f32>(v, coverage);
 #else
-  fragmentOutputs.color = vec4<f32>(panoramaSrgbEncode(sampled.rgb), coverage * uniforms.opacity);
+  let shown = coverage + ring;
+  if (shown <= 0.0) {
+    discard;
+  }
+  let rgb = (panoramaSrgbEncode(sampled.rgb) * coverage + uniforms.outlineColor.rgb * ring) / shown;
+  fragmentOutputs.color = vec4<f32>(rgb, shown * uniforms.opacity);
 #endif
 #endif
   fragmentOutputs.fragDepth = clamp(clip.z / clip.w, 0.0, 1.0);
@@ -209,5 +228,5 @@ fn main(input : FragmentInputs) -> FragmentOutputs {
 }
 `;
 
-export const ORB_UNIFORMS = ["viewRotProj", "quadCenter", "quadU", "quadV", "markerRel", "radius", "tanPreviewHalfAngle", "opacity", "content0", "content1", "content2"] as const;
+export const ORB_UNIFORMS = ["viewRotProj", "quadCenter", "quadU", "quadV", "markerRel", "radius", "tanPreviewHalfAngle", "opacity", "outlineColor", "outlineWidth", "content0", "content1", "content2"] as const;
 export const IMMERSION_UNIFORMS = ["inverseViewRotProj", "opacity", "mixWeight", "content0", "content1", "content2", "nextContent0", "nextContent1", "nextContent2"] as const;

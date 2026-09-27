@@ -103,6 +103,7 @@ if (result.ok) {
 | `groups` | no | `{ id, title, members: [entity ids] }`, ordered lists for the Scenes tab |
 | `initialPanorama` | no | The panorama the list suggests first |
 | `overview` | no | Where the globe camera goes when the scene loads, below |
+| `markerStyle` | no | How every orb looks: an outline, and growth under the pointer, below |
 | `requiredExtensions`, `extensions` | no | See the document rules above |
 
 ### Asset: `type: "panorama-image"`
@@ -146,7 +147,7 @@ entities that use it unsupported, and the scene still loads.
 | `links` | no | Links to other panoramas, below |
 | `required` | no | `true`: refuse the whole scene if this entity cannot be shown |
 
-**Marker.** `{ mode, eastM, northM, offsetM, radiusMeters? }`. The two modes
+**Marker.** `{ mode, eastM, northM, offsetM, radiusMeters?, style? }`. The two modes
 differ in what the offset is measured from:
 
 - `ground-relative`: `offsetM` metres above the ground the map displays, at a
@@ -159,6 +160,29 @@ differ in what the offset is measured from:
 `radiusMeters` replaces the default orb size, the `scene.panorama.markerRadiusMeters`
 parameter. The orb's size on screen still stays within Scenes → Appearance's
 bounds.
+
+`style` overrides the scene's `markerStyle` for this orb, below.
+
+**Marker style.** `{ outline?, hover? }`, as the document's `markerStyle` for
+every orb and as a marker's `style` for one. A marker's `style` replaces the
+scene's one property at a time: an `outline` of its own replaces the scene's
+outline, and leaves the scene's `hover` in place. `null` turns off a property the
+scene gives, for that marker.
+
+- `outline`: `{ color, widthPx }`, a ring drawn just outside the orb's
+  silhouette. `color` is a CSS hex colour, `#rrggbb` or `#rrggbbaa` with alpha.
+  `widthPx` is 0 to 32 CSS px, the same on screen at any distance; 0 draws none.
+  The ring is part of what a click selects.
+- `hover`: `{ scale }`, 1 to 4. While a mouse or pen pointer is over the orb, it
+  grows to `scale` times its size on screen, over `scene.panorama.hoverDuration`,
+  and shrinks back when the pointer leaves. It grows past the size bounds, which
+  apply first. Entering still takes a click.
+
+Without a style the orb has no outline and does not grow.
+
+```json
+"markerStyle": { "outline": { "color": "#ffffff", "widthPx": 2 }, "hover": { "scale": 1.25 } }
+```
 
 **Links.** `{ id, target, label, direction?, arrivalView?, extensions? }`:
 

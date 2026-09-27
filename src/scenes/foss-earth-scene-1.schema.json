@@ -22,7 +22,8 @@
     "entities": { "type": "array", "items": { "$ref": "#/$defs/entity" } },
     "groups": { "type": "array", "items": { "$ref": "#/$defs/group" } },
     "initialPanorama": { "$ref": "#/$defs/id", "description": "A suggested destination. Loading a scene still opens its overview." },
-    "overview": { "$ref": "#/$defs/overview" }
+    "overview": { "$ref": "#/$defs/overview" },
+    "markerStyle": { "$ref": "#/$defs/markerStyle", "description": "How every orb looks, unless its marker's style overrides it." }
   },
   "$defs": {
     "id": {
@@ -239,7 +240,8 @@
             "eastM": { "type": "number" },
             "northM": { "type": "number" },
             "offsetM": { "type": "number" },
-            "radiusMeters": { "type": "number", "exclusiveMinimum": 0 }
+            "radiusMeters": { "type": "number", "exclusiveMinimum": 0 },
+            "style": { "$ref": "#/$defs/markerStyle", "description": "Overrides the scene's markerStyle one property at a time." }
           }
         },
         "initialView": { "$ref": "#/$defs/view" },
@@ -279,6 +281,42 @@
         "headingDeg": { "$ref": "#/$defs/headingDeg" },
         "pitchDeg": { "$ref": "#/$defs/pitchDeg" },
         "verticalFovDeg": { "$ref": "#/$defs/verticalFovDeg" }
+      }
+    },
+    "markerStyle": {
+      "type": "object",
+      "description": "How an orb looks. null turns a property the scene gives off for one marker.",
+      "additionalProperties": false,
+      "properties": {
+        "outline": {
+          "description": "A ring just outside the orb's silhouette.",
+          "oneOf": [
+            { "type": "null" },
+            {
+              "type": "object",
+              "required": ["color", "widthPx"],
+              "additionalProperties": false,
+              "properties": {
+                "color": { "type": "string", "pattern": "^#(?:[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$", "description": "A CSS hex colour, #rrggbb or #rrggbbaa." },
+                "widthPx": { "type": "number", "minimum": 0, "maximum": 32, "description": "CSS px, whatever the orb's distance." }
+              }
+            }
+          ]
+        },
+        "hover": {
+          "description": "While a pointer is over the orb, it grows; entering still takes a click.",
+          "oneOf": [
+            { "type": "null" },
+            {
+              "type": "object",
+              "required": ["scale"],
+              "additionalProperties": false,
+              "properties": {
+                "scale": { "type": "number", "minimum": 1, "maximum": 4, "description": "Times the orb's size on screen." }
+              }
+            }
+          ]
+        }
       }
     }
   }

@@ -38,6 +38,17 @@ export interface ImagePoseRecord {
   rollDeg: number;
 }
 
+/**
+ * How orbs look: the scene's `markerStyle`, which a marker's own `style`
+ * overrides one property at a time. Null turns an inherited property off.
+ */
+export interface MarkerStyleRecord {
+  /** A ring just outside the orb's silhouette: a CSS hex colour, `#rrggbb` or `#rrggbbaa`, and its width in CSS px. */
+  outline?: { color: string; widthPx: number } | null;
+  /** While a pointer is over the orb, it grows to `scale` times its size on screen. Entering still takes a click. */
+  hover?: { scale: number } | null;
+}
+
 export interface MarkerRecord {
   mode: "ground-relative" | "capture-relative";
   eastM: number;
@@ -45,6 +56,15 @@ export interface MarkerRecord {
   offsetM: number;
   /** Overrides `scene.panorama.markerRadiusMeters`; screen-size bounds still apply. */
   radiusMeters?: number;
+  style?: MarkerStyleRecord;
+}
+
+/** A marker's style with the scene's filled in. */
+export interface ResolvedMarkerStyle {
+  /** sRGB channels and alpha, 0–1, as authored; width in CSS px. */
+  outline: { color: readonly [number, number, number, number]; widthPx: number } | null;
+  /** 1 when the orb does not grow on hover. */
+  hoverScale: number;
 }
 
 export interface ViewRecord {
@@ -150,6 +170,8 @@ export interface SceneDocument {
   groups?: readonly GroupRecord[];
   initialPanorama?: string;
   overview?: OverviewRecord;
+  /** Every orb's style, unless its marker's `style` overrides it. */
+  markerStyle?: MarkerStyleRecord;
 }
 
 // ─── The validated model ──────────────────────────────────────────────
@@ -166,6 +188,7 @@ export interface ResolvedAsset extends Omit<PanoramaAssetRecord, "representation
 
 export interface ResolvedPanorama extends Omit<PanoramaEntityRecord, "links"> {
   links: readonly LinkRecord[];
+  markerStyle: ResolvedMarkerStyle;
 }
 
 /** An entity the loader does not know how to show; it stays in the list with a reason. */

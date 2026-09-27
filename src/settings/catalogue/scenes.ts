@@ -217,6 +217,11 @@ const NAVIGATION: readonly ParameterSpec[] = [
     id: "scene.panorama.fadeDuration", label: "Fades", unit: "ms", min: 0, max: 1000, fallback: 150, step: 10, section: "navigation",
     description: "How long exits, links and entries without a visible orb take to fade.", reason: "A short blend; visual check pending.", source: LOADER,
   }),
+  quantity({
+    id: "scene.panorama.hoverDuration", label: "Hover growth", unit: "ms", min: 0, max: 1000, fallback: 120, step: 10, section: "navigation",
+    description: "How long an orb takes to grow while the pointer is over it, and to shrink back, when its scene asks it to grow; 0 jumps.",
+    reason: "Quick enough to follow the pointer, long enough to read as growth; visual check pending.", source: LOADER,
+  }),
   {
     id: "scene.panorama.reducedMotion", label: "Motion", description: "Whether panorama transitions animate, or cut with the short fade below.",
     unit: "none", kind: "choice",
@@ -234,6 +239,11 @@ const NAVIGATION: readonly ParameterSpec[] = [
   quantity({
     id: "scene.panorama.dragSensitivity", label: "Drag to look", unit: "deg/px", min: 0.01, max: 2, fallback: 0.15, scale: "log2", step: 0.05, section: "navigation",
     description: "How far the view turns for each CSS pixel you drag inside a panorama.", reason: "A starting pointer gain; user trial pending.", source: INPUT,
+  }),
+  quantity({
+    id: "scene.panorama.swipeSensitivity", label: "Swipe to look", unit: "deg/px", min: 0.01, max: 2, fallback: 0.15, scale: "log2", step: 0.05, section: "navigation",
+    description: "How far the view turns for each CSS pixel a two-finger trackpad swipe scrolls inside a panorama, with the input method set to Trackpad.",
+    reason: "The same as dragging; user trial pending.", source: INPUT,
   }),
   quantity({
     id: "scene.panorama.lookRate", label: "Key and stick look", unit: "deg/s", min: 1, max: 360, fallback: 90, scale: "log2", step: 0.1, section: "navigation",
