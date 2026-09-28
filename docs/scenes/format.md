@@ -12,7 +12,8 @@ are in the proposal: [panorama scenes](../proposals/panorama-scenes.md).
 - **Validator:** `validateScene` from `foss-earth/scenes`. It checks everything
   the schema checks, plus references between records. It stops a scene before any
   request is made or any GPU memory is used, and names the JSON path of each
-  failure.
+  failure. [`scripts/check-scene.mjs`](../../scripts/check-scene.mjs) runs it on a
+  manifest on disk and checks its media files too, below.
 - **Examples:** [`public/examples/panorama-scenes/`](../../public/examples/panorama-scenes/),
   built by [`scripts/build-panorama-examples.mjs`](../../scripts/build-panorama-examples.mjs).
 
@@ -223,6 +224,28 @@ node scripts/prepare-panorama.mjs --input garden.jpg --pose garden-pose.json \
   --preview-face-sizes 64,128 --immersion-widths 2048 \
   --attribution "Garden by A. Photographer" --out build/prepared-scenes/garden
 ```
+
+## Checking a scene before publishing
+
+[`scripts/check-scene.mjs`](../../scripts/check-scene.mjs) checks a manifest on
+disk the way the loader will read it once published:
+
+- it validates the manifest with `validateScene`, with the loader's default
+  limits;
+- it checks every media file against its representation: the file exists, its
+  header gives the declared type and pixel size, and the files of a
+  representation add up to its `encodedBytes`.
+
+Pass the address the manifest will be served from. Relative media URLs resolve
+against it, and a URL under its folder is read from the manifest's folder on
+disk. The check fetches nothing.
+
+```sh
+node scripts/check-scene.mjs ../site/tour/scene.json --base-url https://example.org/tour/scene.json
+```
+
+From code, `checkSceneFiles(scene, read)` from `foss-earth/scenes` makes the file
+checks on a validated scene, with `read` turning a resolved URL into bytes.
 
 ## A minimal scene
 
