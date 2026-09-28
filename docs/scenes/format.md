@@ -21,7 +21,7 @@ are in the proposal: [panorama scenes](../proposals/panorama-scenes.md).
 
 In the app:
 
-- Open **Scenes (◎) → Content**, then pick an example or paste a manifest URL.
+- Open **+ → Scenes → Content**, then pick an example or paste a manifest URL.
 - Or open the app with `?scene=<id>`, such as `?scene=umn-single`. Only scenes
   the app offers load this way. An arbitrary URL in the address bar never loads.
 - An application built on FOSS Earth offers its own scenes instead of the
