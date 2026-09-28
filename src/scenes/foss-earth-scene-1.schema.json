@@ -228,7 +228,8 @@
           "properties": {
             "headingDeg": { "$ref": "#/$defs/headingDeg" },
             "pitchDeg": { "$ref": "#/$defs/pitchDeg" },
-            "rollDeg": { "type": "number", "exclusiveMinimum": -180, "maximum": 180 }
+            "rollDeg": { "type": "number", "exclusiveMinimum": -180, "maximum": 180 },
+            "aligned": { "type": "boolean", "description": "Whether the heading was set against true north. False: the image faces an arbitrary direction. Absent: not stated." }
           }
         },
         "marker": {

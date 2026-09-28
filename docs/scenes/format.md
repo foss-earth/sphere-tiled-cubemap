@@ -74,9 +74,12 @@ if (result.ok) {
   source?, uncertaintyMeters? }`. An unknown height is absent or `null`, never 0.
 - **Image-local directions:** X is right, Y is forward and Z is up. At a zero pose,
   forward is north, right is east and up is up.
-- **Image pose:** `{ headingDeg, pitchDeg, rollDeg }` rotates image-local
-  directions into the capture's east-north-up frame, as
+- **Image pose:** `{ headingDeg, pitchDeg, rollDeg, aligned? }` rotates
+  image-local directions into the capture's east-north-up frame, as
   R = Rz(−heading) · Rx(pitch) · Ry(roll). Heading is clockwise from north.
+  `aligned` says whether the heading was set against true north: `false` means
+  the image faces an arbitrary direction, though pitch and roll may still level
+  it. Leave it out when that is not known. The panorama's tab shows it.
 - **Equirectangular images** are full 2:1 images:
   - the centre column looks forward (+Y), and u runs right, from the back through
     the left to the front and on through the right;
@@ -133,7 +136,10 @@ The two projections add their own fields:
 - An **equirectangular** image adds `width`, `height` (half the width) and `url`.
 
 The loader uses these sizes to choose a representation within the memory
-budgets before it downloads anything. An asset of an unknown `type` makes the
+budgets before it downloads anything. Inside a panorama it shows the largest
+immersion representation within the panorama tab's image detail, the device's
+texture limit and the budgets, so offer the largest you have: by default every
+budget has room for an image as wide as the renderer's texture limit. An asset of an unknown `type` makes the
 entities that use it unsupported, and the scene still loads.
 
 ### Entity: `type: "panorama"`
@@ -141,10 +147,10 @@ entities that use it unsupported, and the scene still loads.
 | Field | Required | Meaning |
 | --- | --- | --- |
 | `id`, `title` | yes | Shown in the list and on the orb |
-| `description` | no | Shown in the list |
+| `description` | no | Shown in the list and the panorama's tab |
 | `assetId` | yes | The asset it shows |
-| `capture` | yes | `{ longitudeDeg, latitudeDeg, height?, horizontalAccuracyMeters? }`: where the photograph was taken |
-| `imagePose` | yes | The image's orientation, as defined above |
+| `capture` | yes | `{ longitudeDeg, latitudeDeg, height?, horizontalAccuracyMeters? }`: where the photograph was taken, and to what accuracy |
+| `imagePose` | yes | The image's orientation, and whether its north is set, as defined above |
 | `marker` | yes | Where the orb floats, below |
 | `initialView` | no | `{ headingDeg, pitchDeg, verticalFovDeg }` on entering |
 | `links` | no | Links to other panoramas, below |
@@ -161,7 +167,7 @@ differ in what the offset is measured from:
   `capture.height`, or the scene is refused.
 
 `radiusMeters` replaces the default orb size, the `scene.panorama.markerRadiusMeters`
-parameter. The orb's size on screen still stays within Scenes → Appearance's
+parameter. The orb's size on screen still stays within Scenes → Orbs'
 bounds.
 
 `style` overrides the scene's `markerStyle` for this orb, below.

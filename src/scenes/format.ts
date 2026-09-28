@@ -36,6 +36,12 @@ export interface ImagePoseRecord {
   headingDeg: number;
   pitchDeg: number;
   rollDeg: number;
+  /**
+   * Whether the heading was set against true north. False: the image faces
+   * an arbitrary direction, though pitch and roll may still level it.
+   * Absent: the scene does not say.
+   */
+  aligned?: boolean;
 }
 
 /**
