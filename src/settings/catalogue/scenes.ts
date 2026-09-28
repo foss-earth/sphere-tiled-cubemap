@@ -152,20 +152,27 @@ const MOTION: readonly ParameterSpec[] = [
     description: "How long an orb takes to grow while the pointer is over it, and to shrink back, when its scene asks it to grow; 0 jumps.",
     reason: "Quick enough to follow the pointer, long enough to read as growth; visual check pending.", source: LOADER,
   }),
+  {
+    id: "scene.panorama.flightDuration", label: "Fly into and out of 360 images",
+    description: "How long the camera takes to fly into an orb when its 360 image is entered, and to pull back out of it, facing the way the view faces, when it is left. Off opens the orb where it stands (Entry reveal) and fades back to the map view it was entered from.",
+    unit: "ms", kind: "number", named: [{ id: "off", label: "Off" }], bounds: () => ({ min: 100, max: 5000 }), step: 50, scale: "linear",
+    default: 1000, defaultReason: "On, as asked: a second is long enough to follow the camera in and out, and short enough not to wait on; motion trial pending.",
+    home: { tab: SCENES_TAB, section: "motion", level: "main" }, appliesLive: true, source: LOADER,
+  },
   quantity({
     id: "scene.panorama.expandDuration", label: "Entry reveal", unit: "ms", min: 0, max: 2000, fallback: 350, step: 10, section: "motion",
-    description: "How long an orb takes to open out to the whole view on entry.", reason: "A short reveal prototype; motion trial pending.", source: LOADER,
+    description: "How long an orb takes to open out to the whole view on entry when the camera does not fly into it.", reason: "A short reveal prototype; motion trial pending.", source: LOADER,
   }),
   quantity({
     id: "scene.panorama.fadeDuration", label: "Fades", unit: "ms", min: 0, max: 1000, fallback: 150, step: 10, section: "motion",
-    description: "How long exits, links, sharper images and entries without a visible orb take to fade.", reason: "A short blend; visual check pending.", source: LOADER,
+    description: "How long exits without a flight, links, sharper images and entries without a visible orb take to fade.", reason: "A short blend; visual check pending.", source: LOADER,
   }),
   {
     id: "scene.panorama.reducedMotion", label: "Motion", description: "Whether panorama transitions animate, or cut with the short fade below.",
     unit: "none", kind: "choice",
     choices: [
       { id: "system", label: "As the system asks", description: "Follow the operating system's reduced-motion preference." },
-      { id: "reduce", label: "Reduce", description: "Always cut or fade briefly; no reveal, levelling or glide." },
+      { id: "reduce", label: "Reduce", description: "Always cut or fade briefly; no flight, reveal, levelling or glide." },
     ],
     default: "system", defaultReason: "Respect the operating system, and allow a stricter choice here.",
     home: { tab: SCENES_TAB, section: "motion", level: "main" }, appliesLive: true, source: LOADER,

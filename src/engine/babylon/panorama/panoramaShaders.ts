@@ -44,6 +44,15 @@ fn panoramaEquirectUv(image: vec3<f32>) -> vec2<f32> {
   let d = normalize(image);
   return vec2<f32>(atan2(d.x, d.y) / 6.283185307179586 + 0.5, 0.5 - asin(clamp(d.z, -1.0, 1.0)) / 3.141592653589793);
 }
+
+// Gradients across the longitude seam: of u and of u shifted by half a
+// turn, whichever is smaller, so the seam does not drop to the coarsest mip.
+fn panoramaSeamlessSample(tex: texture_2d<f32>, samp: sampler, uv: vec2<f32>) -> vec4<f32> {
+  let shifted = fract(uv.x + 0.5);
+  let dx = vec2<f32>(select(dpdx(shifted), dpdx(uv.x), abs(dpdx(uv.x)) <= abs(dpdx(shifted))), dpdx(uv.y));
+  let dy = vec2<f32>(select(dpdy(shifted), dpdy(uv.x), abs(dpdy(uv.x)) <= abs(dpdy(shifted))), dpdy(uv.y));
+  return textureSampleGrad(tex, samp, uv, dx, dy);
+}
 `;
 
 const CONTENT_UNIFORMS = `
@@ -52,7 +61,12 @@ uniform content1 : vec3<f32>;
 uniform content2 : vec3<f32>;
 `;
 
-/** The orb: a quad perpendicular to the camera-to-marker axis, or covering the view near and inside the sphere. */
+/**
+ * The orb: a quad perpendicular to the camera-to-marker axis, or covering the
+ * view near and inside the sphere. It samples the orb's preview cube, or,
+ * with SOURCE_EQUIRECT, an equirectangular image, as when a flight out of a
+ * panorama starts from the image on screen.
+ */
 export const ORB_VERTEX = /* wgsl */ `
 attribute position : vec3<f32>;
 uniform viewRotProj : mat4x4<f32>;
@@ -78,8 +92,13 @@ uniform opacity : f32;
 uniform outlineColor : vec4<f32>;
 uniform outlineWidth : f32;
 ${CONTENT_UNIFORMS}
+#ifdef SOURCE_EQUIRECT
+var panoramaEquirect : texture_2d<f32>;
+var panoramaEquirectSampler : sampler;
+#else
 var panoramaCube : texture_cube<f32>;
 var panoramaCubeSampler : sampler;
+#endif
 varying vRel : vec3<f32>;
 ${COMMON}
 
@@ -114,7 +133,11 @@ fn main(input : FragmentInputs) -> FragmentOutputs {
   let identity = inside || tanAlpha >= uniforms.tanPreviewHalfAngle;
   let world = select(windowed, v, identity);
   let image = panoramaImageDirection(world);
+#ifdef SOURCE_EQUIRECT
+  let sampled = panoramaSeamlessSample(panoramaEquirect, panoramaEquirectSampler, panoramaEquirectUv(image));
+#else
   let sampled = textureSample(panoramaCube, panoramaCubeSampler, panoramaCubeVector(image));
+#endif
 
   // Depth where the ray meets the sphere: the near side from outside, the far side inside.
   let b = c * d;
@@ -190,15 +213,6 @@ var nextCubeSampler : sampler;
 #endif
 varying vRay : vec4<f32>;
 ${COMMON}
-
-// Gradients across the longitude seam: of u and of u shifted by half a
-// turn, whichever is smaller, so the seam does not drop to the coarsest mip.
-fn panoramaSeamlessSample(tex: texture_2d<f32>, samp: sampler, uv: vec2<f32>) -> vec4<f32> {
-  let shifted = fract(uv.x + 0.5);
-  let dx = vec2<f32>(select(dpdx(shifted), dpdx(uv.x), abs(dpdx(uv.x)) <= abs(dpdx(shifted))), dpdx(uv.y));
-  let dy = vec2<f32>(select(dpdy(shifted), dpdy(uv.x), abs(dpdy(uv.x)) <= abs(dpdy(shifted))), dpdy(uv.y));
-  return textureSampleGrad(tex, samp, uv, dx, dy);
-}
 
 @fragment
 fn main(input : FragmentInputs) -> FragmentOutputs {
