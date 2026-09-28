@@ -154,7 +154,7 @@ const MOTION: readonly ParameterSpec[] = [
   }),
   {
     id: "scene.panorama.flightDuration", label: "Fly into and out of 360 images",
-    description: "How long the camera takes to fly into an orb when its 360 image is entered, and to pull back out of it, facing the way the view faces, when it is left. Off opens the orb where it stands (Entry reveal) and fades back to the map view it was entered from.",
+    description: "How long the camera takes to fly into an orb when its 360 image is entered, and to pull back out of it, facing the way the view faces, when it is left. Cut short by a press, a swipe or Escape, the camera slows to a stop where it is, as the map's glide does (Camera → Glide). Off opens the orb where it stands (Entry reveal) and fades back to the map view it was entered from.",
     unit: "ms", kind: "number", named: [{ id: "off", label: "Off" }], bounds: () => ({ min: 100, max: 5000 }), step: 50, scale: "linear",
     default: 1000, defaultReason: "On, as asked: a second is long enough to follow the camera in and out, and short enough not to wait on; motion trial pending.",
     home: { tab: SCENES_TAB, section: "motion", level: "main" }, appliesLive: true, source: LOADER,
