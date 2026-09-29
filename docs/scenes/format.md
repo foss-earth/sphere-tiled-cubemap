@@ -41,6 +41,78 @@ if (result.ok) {
 }
 ```
 
+### Progressive delivery and progress
+
+Keep a scene in a folder with a small `scene.json` index and separate image
+files. The manifest contains URLs and metadata, never embedded image bytes:
+
+```text
+scene/
+├── scene.json
+└── media/
+    └── garden/
+        ├── preview-64/{px,nx,py,ny,pz,nz}.jpg
+        ├── preview-256/{px,nx,py,ny,pz,nz}.jpg
+        ├── immersion-2048.jpg
+        └── immersion-6144.jpg
+```
+
+The loader fetches and validates the index before scheduling images. It does
+not wait for all images to show the scene:
+
+1. List the scene's metadata and request terrain at its overview, independently
+   of image downloads. A ground-relative orb appears once its own ground and
+   preview are available.
+2. Load each panorama's smallest preview inside `scene.panorama.previewFaceRange`
+   first. Show it as soon as its six faces are downloaded, decoded and uploaded.
+   A slow or failed panorama does not block the others.
+3. Sharpen ready previews toward the existing orb size/density target at lower
+   request priority. First previews take priority over background sharpening.
+4. On entry, show the panorama's preview and request the selected immersion
+   representation within the user's image detail and memory limits. Keep the
+   preview visible until the replacement is usable. It requests that selected
+   image directly, without downloading every intermediate size.
+
+Scene replacement and disposal cancel obsolete work. A new camera gesture
+cancels a pending overview move, so terrain arriving later cannot take the
+camera back. Request counts, decode concurrency, timeouts, preview detail and
+memory budgets live in the Scenes tab's settings.
+
+The shared log reports scene-file bytes, preview readiness, and entered-image
+progress with bars. Missing response lengths produce indeterminate progress;
+image totals come from each representation's `encodedBytes`. Downloaded bytes
+can reach their total before decoding and GPU upload finish. The Scenes list
+shows preview readiness separately from waiting for ground and entering a
+panorama. Programs can observe transfers through `loadScene`'s `onProgress`
+option or `SceneController.onProgress`, exported from `foss-earth/scenes`.
+
+This is progressive delivery of separate representations. Each JPEG or PNG
+still finishes before its texture is usable; tiled panoramas and incremental
+JPEG decoding are not implemented.
+
+Panoramas render with WebGPU, WebGL 2 or WebGL 1 using the same analytic orb
+geometry and depth. WebGL 1 requires `EXT_frag_depth`,
+`OES_standard_derivatives` and high-precision fragment shaders. Missing a
+required capability produces a specific diagnostic. `EXT_shader_texture_lod`
+is optional; without it, implicit sampling can be softer at the longitude seam.
+
+WebGL uploads use row strips within `scene.panorama.uploadMiBPerFrame` and
+`scene.panorama.uploadOutstandingMiB`. WebGL 2 tracks outstanding uploads with
+GPU fences and supports mipmaps for non-power-of-two images. WebGL 1 has no
+fences, so it caps frame submissions by both allowances and releases staging
+bytes once the API consumes their source. Its non-power-of-two images use
+clamp-to-edge and bilinear filtering without mipmaps; include power-of-two
+representations when mipmapped detail is needed on WebGL 1. Both WebGL paths
+blend panorama transitions in linear light. These capabilities do not imply
+equal performance across devices, and a backend's presence alone does not
+qualify a phone.
+
+The manifest and its relative media paths may live on a different static
+origin from the app, provided that origin allows fetches from the app with
+CORS. For independent content releases, publish images first and an immutable,
+versioned manifest last; keep earlier media while apps still reference it.
+The scene format does not require images to be bundled with application code.
+
 ## Rules for the whole document
 
 - **Top-level fields:** `format` must be `"foss-earth-scene"` and `version` must
@@ -212,7 +284,8 @@ This sets where the globe camera goes when the scene loads:
 - The camera looks at `target` from `distanceMeters` away, along `headingDeg`.
 - `pitchDeg` is negative when looking down.
 - With no `height`, the target is on the displayed ground. The overview then
-  waits until there is ground to put it on.
+  requests terrain at that destination and waits until there is ground to put
+  it on. Panorama previews download independently during that wait.
 
 ## Preparing images
 

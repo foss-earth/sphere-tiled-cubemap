@@ -118,7 +118,7 @@ const APPEARANCE: readonly ParameterSpec[] = [
     reason: "One texel per pixel, an understandable heuristic; centre density is not a bound on the rim.", source: LOADER,
   }),
   {
-    id: "scene.panorama.previewFaceRange", label: "Preview cube size", description: "The smallest and largest preview cube faces that may be loaded for orbs.",
+    id: "scene.panorama.previewFaceRange", label: "Preview cube size", description: "The smallest and largest preview cube faces that may be loaded for orbs. Each orb shows its smallest allowed preview first, then sharpens to the orb image sharpness target behind the other first previews.",
     unit: "px", kind: "range", bounds: textureSideBounds(16, 2048), step: 1, scale: "log2",
     default: { min: 64, max: 256 }, defaultReason: "Small previews: 43 cubes of 128 px take about 21.5 MiB with mips.",
     home: { tab: SCENES_TAB, section: "appearance", level: "main" }, appliesLive: true, source: LOADER,
