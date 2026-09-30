@@ -4,6 +4,13 @@
  * Babylon translates attributes, varyings and fragment depth for WebGL 2.
  * WebGL textures hold encoded sRGB. Decode before blending and encode once
  * at output, matching WebGPU's native sRGB texture sampling contract.
+ *
+ * PANORAMA_LEAN (the renderer.experiments.panoramaShaders parameter) draws
+ * the same image with less per-pixel work: the orb's cap angle and window
+ * come from the CPU (its depth keeps this shader's arithmetic), immersion
+ * turns the view into the image's frame in the vertex shader, and a ray is
+ * normalized once where it must be, or not at all for a cube lookup, which
+ * only needs its direction.
  */
 
 const EXTENSIONS = /* glsl */ `
@@ -43,9 +50,12 @@ vec3 panoramaCubeVector(vec3 imageDirection) {
   return vec3(imageDirection.x, imageDirection.z, imageDirection.y);
 }
 
-vec2 panoramaEquirectUv(vec3 imageDirection) {
-  vec3 d = normalize(imageDirection);
+vec2 panoramaEquirectUvUnit(vec3 d) {
   return vec2(atan(d.x, d.y) / 6.283185307179586 + 0.5, 0.5 - asin(clamp(d.z, -1.0, 1.0)) / 3.141592653589793);
+}
+
+vec2 panoramaEquirectUv(vec3 imageDirection) {
+  return panoramaEquirectUvUnit(normalize(imageDirection));
 }
 
 vec4 panoramaSeamlessSample(sampler2D tex, vec2 uv) {
@@ -91,6 +101,12 @@ uniform float tanPreviewHalfAngle;
 uniform float opacity;
 uniform vec4 outlineColor;
 uniform float outlineWidth;
+#ifdef PANORAMA_LEAN
+// The same for every pixel of a draw, so worked out once on the CPU (ORB_LEAN_UNIFORMS).
+uniform float sinAlpha;
+uniform float windowGain;
+uniform float identityWindow;
+#endif
 ${CONTENT_UNIFORMS}
 #ifdef SOURCE_EQUIRECT
 uniform sampler2D panoramaEquirect;
@@ -102,6 +118,16 @@ ${COMMON}
 
 void main(void) {
   vec3 v = normalize(vRel);
+#ifdef PANORAMA_LEAN
+  // The distance, axis and depth keep the full shader's arithmetic: orbs that
+  // nearly coincide on screen must settle their depth ties the same way.
+  float d = length(markerRel);
+  vec3 a = markerRel / d;
+  float c = dot(a, v);
+  vec3 k = v - c * a;
+  float sinDelta = length(k);
+  bool inside = d <= radius;
+#else
   float d = length(markerRel);
   vec3 a = markerRel / d;
   float c = dot(a, v);
@@ -111,6 +137,7 @@ void main(void) {
   float sinAlpha = min(radius / d, 1.0);
   float cosAlpha = sqrt(max(1.0 - sinAlpha * sinAlpha, 0.0));
   float tanAlpha = sinAlpha / max(cosAlpha, 1e-7);
+#endif
   float edge = sinAlpha - sinDelta;
   float edgeWidth = max(fwidth(sinDelta), 1e-7);
   float front = c > 0.0 ? 1.0 : 0.0;
@@ -120,9 +147,14 @@ void main(void) {
   float ringOuter = clamp(edge / pixelStep + outlineWidth + 0.5, 0.0, 1.0) * front;
   float ring = (inside ? 0.0 : max(ringOuter - exterior, 0.0)) * outlineColor.a;
 
+#ifdef PANORAMA_LEAN
+  // Only its direction is sampled: the equirectangular lookup normalizes it once, a cube needs no length.
+  vec3 worldDirection = identityWindow > 0.5 ? v : a + k * (windowGain / max(c, 1e-4));
+#else
   float gain = tanPreviewHalfAngle / max(tanAlpha, 1e-7);
   vec3 windowed = normalize(a + k * (gain / max(c, 1e-4)));
   vec3 worldDirection = (inside || tanAlpha >= tanPreviewHalfAngle) ? v : windowed;
+#endif
   vec3 imageDirection = panoramaImageDirection(worldDirection);
 #ifdef SOURCE_EQUIRECT
   vec4 sampled = panoramaSeamlessSample(panoramaEquirect, panoramaEquirectUv(imageDirection));
@@ -136,7 +168,11 @@ void main(void) {
   vec4 clip = viewRotProj * vec4(v * max(t, 0.0), 1.0);
 #ifdef OUTPUT_DIRECTION
   if (coverage <= 0.0) discard;
+#ifdef PANORAMA_LEAN
+  gl_FragColor = vec4(normalize(imageDirection), coverage);
+#else
   gl_FragColor = vec4(imageDirection, coverage);
+#endif
 #else
 #ifdef OUTPUT_RAY
   if (coverage <= 0.0) discard;
@@ -157,10 +193,30 @@ export const IMMERSION_VERTEX_GLSL = /* glsl */ `
 precision highp float;
 attribute vec3 position;
 uniform mat4 inverseViewRotProj;
+#ifdef PANORAMA_LEAN
+// The view ray in each image's frame, divided by its w on the CPU: w is the
+// same at every corner, so the rotation is linear across the triangle.
+uniform mat4 imageFromClip;
+uniform mat4 nextImageFromClip;
+varying vec3 vImage;
+varying vec3 vNextImage;
+#ifdef OUTPUT_RAY
 varying vec4 vRay;
+#endif
+#else
+varying vec4 vRay;
+#endif
 void main(void) {
   vec4 clip = vec4(position.xy, 0.5, 1.0);
+#ifdef PANORAMA_LEAN
+  vImage = (imageFromClip * clip).xyz;
+  vNextImage = (nextImageFromClip * clip).xyz;
+#ifdef OUTPUT_RAY
   vRay = inverseViewRotProj * clip;
+#endif
+#else
+  vRay = inverseViewRotProj * clip;
+#endif
   gl_Position = clip;
 }
 `;
@@ -184,10 +240,38 @@ uniform sampler2D nextEquirect;
 #ifdef NEXT_CUBE
 uniform samplerCube nextCube;
 #endif
+#ifdef PANORAMA_LEAN
+varying vec3 vImage;
+#ifdef NEXT_EQUIRECT
+varying vec3 vNextImage;
+#endif
+#ifdef NEXT_CUBE
+varying vec3 vNextImage;
+#endif
+#ifdef OUTPUT_RAY
 varying vec4 vRay;
+#endif
+#else
+varying vec4 vRay;
+#endif
 ${COMMON}
 
 void main(void) {
+#ifdef PANORAMA_LEAN
+#ifdef SOURCE_EQUIRECT
+  vec3 imageDirection = normalize(vImage);
+  vec3 color = panoramaSeamlessSample(panoramaEquirect, panoramaEquirectUvUnit(imageDirection)).rgb;
+#else
+  vec3 imageDirection = vImage;
+  vec3 color = textureCube(panoramaCube, panoramaCubeVector(imageDirection)).rgb;
+#endif
+#ifdef NEXT_EQUIRECT
+  vec3 nextImage = normalize(vNextImage);
+#endif
+#ifdef NEXT_CUBE
+  vec3 nextImage = vNextImage;
+#endif
+#else
   vec3 v = normalize(vRay.xyz / vRay.w);
   vec3 imageDirection = panoramaImageDirection(v);
 #ifdef SOURCE_EQUIRECT
@@ -196,17 +280,30 @@ void main(void) {
   vec3 color = textureCube(panoramaCube, panoramaCubeVector(imageDirection)).rgb;
 #endif
   vec3 nextImage = vec3(dot(nextContent0, v), dot(nextContent1, v), dot(nextContent2, v));
+#endif
 #ifdef NEXT_EQUIRECT
+#ifdef PANORAMA_LEAN
+  color = panoramaSrgbEncode(mix(panoramaSrgbDecode(color), panoramaSrgbDecode(panoramaSeamlessSample(nextEquirect, panoramaEquirectUvUnit(nextImage)).rgb), mixWeight));
+#else
   color = panoramaSrgbEncode(mix(panoramaSrgbDecode(color), panoramaSrgbDecode(panoramaSeamlessSample(nextEquirect, panoramaEquirectUv(nextImage)).rgb), mixWeight));
+#endif
 #endif
 #ifdef NEXT_CUBE
   color = panoramaSrgbEncode(mix(panoramaSrgbDecode(color), panoramaSrgbDecode(textureCube(nextCube, panoramaCubeVector(nextImage)).rgb), mixWeight));
 #endif
 #ifdef OUTPUT_DIRECTION
+#ifdef PANORAMA_LEAN
+  gl_FragColor = vec4(normalize(imageDirection), 1.0);
+#else
   gl_FragColor = vec4(imageDirection, 1.0);
+#endif
 #else
 #ifdef OUTPUT_RAY
+#ifdef PANORAMA_LEAN
+  gl_FragColor = vec4(normalize(vRay.xyz / vRay.w), 1.0);
+#else
   gl_FragColor = vec4(v, 1.0);
+#endif
 #else
   // The steady view has no crossfade: avoid decoding and encoding every
   // pixel when the encoded sample is already the desired display color.
@@ -215,3 +312,8 @@ void main(void) {
 #endif
 }
 `;
+
+/** The orb's per-draw constants under PANORAMA_LEAN, set by the renderer from its float64 geometry. */
+export const ORB_LEAN_UNIFORMS = ["sinAlpha", "windowGain", "identityWindow"] as const;
+/** Immersion's view-to-image matrices under PANORAMA_LEAN. */
+export const IMMERSION_LEAN_UNIFORMS = ["imageFromClip", "nextImageFromClip"] as const;
