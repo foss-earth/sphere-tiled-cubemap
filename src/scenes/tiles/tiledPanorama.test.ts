@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import { cross, normalize, type Vec3 } from "../panoramaMath";
 import { tileAtlasLayout } from "../budget";
 import type { ResolvedTiledCube } from "../format";
+import { createMediaStore, mediaGroup, type SavedFiles } from "../mediaStore";
+import { memoryBackend } from "../../test/memoryMediaBackend";
 import { createTiledPanorama, type TiledPanoramaLimits } from "./tiledPanorama";
 import type { TileView } from "./tileSelection";
 
@@ -25,7 +27,7 @@ const ahead: TileView = (() => {
   return { forward, right, up: cross(right, forward), tanHalfHeight: Math.tan((75 * Math.PI) / 360), tanHalfWidth: Math.tan((75 * Math.PI) / 360) * 0.45, heightPx: 2401 };
 })();
 
-function harness(respond: (url: string) => Response) {
+function harness(respond: (url: string) => Response, saved: SavedFiles | null = null, decodes: (bytes: Uint8Array) => boolean = () => true) {
   const uploads: number[] = [];
   const requested: string[] = [];
   let released = 0, decoded = 0;
@@ -33,10 +35,11 @@ function harness(respond: (url: string) => Response) {
     representation, layout,
     atlas: { uploadTile: slot => { uploads.push(slot); }, setTable: () => {}, dispose: () => {} },
     fetch: async url => { requested.push(url); return respond(url); },
-    decode: async bytes => { decoded += 1; return { side: (bytes[7] << 8) | bytes[8] }; },
+    decode: async bytes => { if (!decodes(bytes)) throw new Error("The source image could not be decoded."); decoded += 1; return { side: (bytes[7] << 8) | bytes[8] }; },
     release: () => { released += 1; },
     limits: LIMITS,
     wake: () => {},
+    saved,
   });
   let now = 0;
   return {
@@ -89,5 +92,63 @@ describe("a tiled panorama", () => {
     // The first retry, after twice the delay.
     await h.run(40, 16);
     expect(h.panorama.stats().complete).toBe(true);
+  });
+});
+
+describe("a tiled panorama with saved images", () => {
+  const group = mediaGroup({ id: "northrop-mall", revision: "ac69" }, representation);
+
+  it("keeps the tiles it downloads, and a later visit shows them without asking the network", async () => {
+    const memory = memoryBackend();
+    const media = createMediaStore({ open: async () => memory.backend, maxBytes: 1 << 20 });
+    const first = harness(() => new Response(jpeg(194) as BodyInit, { headers: { "content-type": "image/jpeg" } }), media.files(group));
+    await first.run(20);
+    await media.settled();
+    expect(first.panorama.stats()).toMatchObject({ complete: true, reusedTiles: 0 });
+    const kept = await media.inspect();
+    expect(kept.files).toBe(first.requested.length);
+    expect(kept.bytes).toBe(100 * first.requested.length);
+
+    const later = createMediaStore({ open: async () => memory.backend, maxBytes: 1 << 20 });
+    const second = harness(() => new Response("", { status: 503 }), later.files(group));
+    await second.run(20);
+    expect(second.requested).toEqual([]);
+    expect(second.panorama.stats()).toMatchObject({ complete: true, reusedTiles: first.requested.length, reusedBytes: 100 * first.requested.length, receivedBytes: 0, failures: 0 });
+  });
+
+  it("does not keep a tile of the wrong size, and forgets a kept one", async () => {
+    const memory = memoryBackend();
+    const media = createMediaStore({ open: async () => memory.backend, maxBytes: 1 << 20 });
+    const wrong = harness(() => new Response(jpeg(256) as BodyInit), media.files(group));
+    await wrong.run(10);
+    await media.settled();
+    expect((await media.inspect()).files).toBe(0);
+
+    // A stale copy of the wrong size under a tile's name: dropped, and the network asked on the retry.
+    const url = `${representation.url}py/1/0/0.jpg`;
+    media.put(group, url, jpeg(256), "image/jpeg");
+    await media.settled();
+    const h = harness(() => new Response(jpeg(194) as BodyInit), media.files(group));
+    await h.run(60);
+    await media.settled();
+    expect(h.panorama.stats().complete).toBe(true);
+    expect(h.requested).toContain(url);
+    expect([...(await media.get(group, url))!.bytes.subarray(7, 9)]).toEqual([0, 194]);
+  });
+
+  it("forgets a kept tile the browser cannot decode", async () => {
+    const memory = memoryBackend();
+    const media = createMediaStore({ open: async () => memory.backend, maxBytes: 1 << 20 });
+    const url = `${representation.url}py/1/0/0.jpg`;
+    const damaged = jpeg(194);
+    damaged[50] = 0xee;
+    media.put(group, url, damaged, "image/jpeg");
+    await media.settled();
+    const h = harness(() => new Response(jpeg(194) as BodyInit), media.files(group), bytes => bytes[50] !== 0xee);
+    await h.run(60);
+    await media.settled();
+    expect(h.panorama.stats().complete).toBe(true);
+    expect(h.requested).toContain(url);
+    expect((await media.get(group, url))!.bytes[50]).toBe(0);
   });
 });

@@ -273,6 +273,8 @@ const LOADING: readonly ParameterSpec[] = [
 
 /** Bytes of one stored tile of the prepared tiled cubes: 194 texels a side, RGBA. */
 const TILE_BYTES = 194 * 194 * 4;
+/** The tiles of a prepared cube: four levels of 1536-texel faces in 192-texel tiles, 6 · (1 + 4 + 16 + 64). */
+const TILES_OF_A_CUBE = 510;
 /** The tiled cubes' source of truth: the prototype that measured them. */
 const TILE_EVIDENCE = "benchmarks/eac-progressive-prototype";
 
@@ -284,9 +286,9 @@ const TILE_EVIDENCE = "benchmarks/eac-progressive-prototype";
  */
 const TILES: readonly ParameterSpec[] = [
   quantity({
-    id: "scene.panorama.tileMemoryMiB", label: "Tile memory", unit: "MiB", min: 1, max: 1024, fallback: Math.ceil((196 * TILE_BYTES) / MIB * 4) / 4, scale: "log2", step: 0.25, section: "tiles",
-    description: "GPU memory for the tiles of a panorama: one atlas, allocated when the panorama is entered. More keeps more of it sharp when you look back; with less, the view drops a level of detail before it would go without tiles. Part of the panorama GPU memory.",
-    reason: `196 tiles of 194 texels, ${TILE_EVIDENCE}'s setting: a phone's whole view at the finest level and its margin, with room to look around.`, source: RESOURCES,
+    id: "scene.panorama.tileMemoryMiB", label: "Tile memory", unit: "MiB", min: 1, max: 1024, fallback: Math.ceil((TILES_OF_A_CUBE * TILE_BYTES) / MIB * 4) / 4, scale: "log2", step: 0.25, section: "tiles",
+    description: "The most GPU memory the tiles of a panorama may take: one atlas, allocated when the panorama is entered, with a slot for each of its tiles up to this. With room for all of them, a part you looked at stays sharp when you look back. With less, the tiles out of view give up their slots and are read again from the saved images, and the view drops a level of detail before it would go without tiles. Part of the panorama GPU memory.",
+    reason: `Every tile of a panorama as the tools prepare it: ${TILES_OF_A_CUBE} tiles of 194 texels, about what its whole 6144 px image takes. Nothing looked at is loaded twice. ${TILE_EVIDENCE} ran on 196 tiles, a phone's view and its margin; a turn right round at a laptop's window needs more, and brought tiles back in on every look back.`, source: RESOURCES,
   }),
   quantity({
     id: "scene.panorama.tileRequests", label: "Tile requests at once", unit: "count", min: 1, max: 16, fallback: 6, step: 1, section: "tiles",
@@ -320,6 +322,24 @@ const TILES: readonly ParameterSpec[] = [
   quantity({
     id: "scene.panorama.tileRetryDelay", label: "First tile retry after", unit: "ms", min: 50, max: 10_000, fallback: 250, scale: "log2", step: 0.25, section: "tiles", level: "all",
     description: "The wait before a failed tile is first asked for again.", reason: `${TILE_EVIDENCE}'s setting.`, source: LOADER,
+  }),
+];
+
+/** One panorama's tiles as the tools prepare them, MiB: 510 tiles, 6.5 KB each at the finest level. */
+const TILED_PANORAMA_MIB = 3.3;
+/** The saved images' default limit, MiB. */
+const SAVED_MIB = 256;
+
+/**
+ * Scenes → Saved images: what is kept on disk between visits
+ * (src/scenes/mediaStore.ts), so that no file is downloaded twice.
+ */
+const SAVED: readonly ParameterSpec[] = [
+  quantity({
+    id: "scene.panorama.savedMiB", label: "Saved images", unit: "MiB", min: 0, max: 4096, fallback: SAVED_MIB, step: 1, section: "saved",
+    description: "Disk space for the scene images the app keeps between visits: orb previews, tiles and whole images. Each file is kept under its image's revision, so it is downloaded once; a reload, a later visit and a look back at part of a 360 image read it from the disk. Past this, the images unused longest go first, whole. 0 keeps nothing.",
+    reason: `Room for the tiles of about ${Math.floor(SAVED_MIB / TILED_PANORAMA_MIB)} panoramas looked all around, ${TILED_PANORAMA_MIB} MiB each as the tools prepare them, with every orb's previews; only what was looked at is kept.`,
+    source: "src/scenes/mediaStore.ts",
   }),
 ];
 
@@ -426,7 +446,7 @@ const PANORAMA_SETTINGS: readonly ParameterSpec[] = [
   }),
 ];
 
-export const SCENE_PARAMETERS: readonly ParameterSpec[] = [...CONTENT, ...APPEARANCE, ...MOTION, ...LOADING, ...TILES, ...PANORAMA, ...PANORAMA_SETTINGS];
+export const SCENE_PARAMETERS: readonly ParameterSpec[] = [...CONTENT, ...APPEARANCE, ...MOTION, ...LOADING, ...TILES, ...SAVED, ...PANORAMA, ...PANORAMA_SETTINGS];
 
 export const SCENE_SECTION_TITLES: ReadonlyArray<readonly [string, string, string]> = [
   [SCENES_TAB, "content", "Content"],
@@ -434,6 +454,7 @@ export const SCENE_SECTION_TITLES: ReadonlyArray<readonly [string, string, strin
   [SCENES_TAB, "motion", "Motion"],
   [SCENES_TAB, "loading", "Loading and memory"],
   [SCENES_TAB, "tiles", "Tiled images"],
+  [SCENES_TAB, "saved", "Saved images"],
   [SCENES_TAB, "credits", "Credits"],
   [PANORAMA_TAB, "photograph", "Photograph"],
   [PANORAMA_TAB, "links", "Links"],
