@@ -97,41 +97,65 @@
       "properties": {
         "id": { "$ref": "#/$defs/id" },
         "role": { "enum": ["preview", "immersion"] },
-        "projection": { "enum": ["cube", "equirectangular"] },
+        "projection": { "type": "string", "description": "\"cube\", \"equirectangular\" or \"tiled-cube\". A loader skips a representation of a later projection, with a warning, and shows the asset's others." },
         "mimeType": { "enum": ["image/jpeg", "image/png"] },
-        "encodedBytes": { "$ref": "#/$defs/positiveInteger", "description": "The prepared files' total bytes, six faces summed for a cube." },
+        "encodedBytes": { "$ref": "#/$defs/positiveInteger", "description": "The prepared files' total bytes, six faces summed for a cube, every tile for a tiled cube." },
         "extensions": { "$ref": "#/$defs/extensions" }
       },
-      "if": { "properties": { "projection": { "const": "cube" } } },
-      "then": {
-        "required": ["faceSize", "faces"],
-        "properties": {
-          "id": true, "role": true, "projection": true, "mimeType": true, "encodedBytes": true, "extensions": true,
-          "faceSize": { "$ref": "#/$defs/positiveInteger" },
-          "faces": {
-            "type": "object",
-            "description": "Faces named by the format's source axes: X east, Y north, Z up at zero pose. See the cube face table in docs/scenes/format.md.",
-            "required": ["px", "nx", "py", "ny", "pz", "nz"],
-            "additionalProperties": false,
+      "allOf": [
+        {
+          "if": { "properties": { "projection": { "const": "cube" } } },
+          "then": {
+            "required": ["faceSize", "faces"],
             "properties": {
-              "px": { "$ref": "#/$defs/url" }, "nx": { "$ref": "#/$defs/url" },
-              "py": { "$ref": "#/$defs/url" }, "ny": { "$ref": "#/$defs/url" },
-              "pz": { "$ref": "#/$defs/url" }, "nz": { "$ref": "#/$defs/url" }
-            }
+              "id": true, "role": true, "projection": true, "mimeType": true, "encodedBytes": true, "extensions": true,
+              "faceSize": { "$ref": "#/$defs/positiveInteger" },
+              "faces": {
+                "type": "object",
+                "description": "Faces named by the format's source axes: X east, Y north, Z up at zero pose. See the cube face table in docs/scenes/format.md.",
+                "required": ["px", "nx", "py", "ny", "pz", "nz"],
+                "additionalProperties": false,
+                "properties": {
+                  "px": { "$ref": "#/$defs/url" }, "nx": { "$ref": "#/$defs/url" },
+                  "py": { "$ref": "#/$defs/url" }, "ny": { "$ref": "#/$defs/url" },
+                  "pz": { "$ref": "#/$defs/url" }, "nz": { "$ref": "#/$defs/url" }
+                }
+              }
+            },
+            "additionalProperties": false
           }
         },
-        "additionalProperties": false
-      },
-      "else": {
-        "required": ["width", "height", "url"],
-        "properties": {
-          "id": true, "role": true, "projection": true, "mimeType": true, "encodedBytes": true, "extensions": true,
-          "width": { "$ref": "#/$defs/positiveInteger", "description": "Twice the height: a full 2:1 image." },
-          "height": { "$ref": "#/$defs/positiveInteger" },
-          "url": { "$ref": "#/$defs/url" }
+        {
+          "if": { "properties": { "projection": { "const": "equirectangular" } } },
+          "then": {
+            "required": ["width", "height", "url"],
+            "properties": {
+              "id": true, "role": true, "projection": true, "mimeType": true, "encodedBytes": true, "extensions": true,
+              "width": { "$ref": "#/$defs/positiveInteger", "description": "Twice the height: a full 2:1 image." },
+              "height": { "$ref": "#/$defs/positiveInteger" },
+              "url": { "$ref": "#/$defs/url" }
+            },
+            "additionalProperties": false
+          }
         },
-        "additionalProperties": false
-      }
+        {
+          "if": { "properties": { "projection": { "const": "tiled-cube" } } },
+          "then": {
+            "required": ["warp", "faceSize", "tileSize", "gutter", "levelBytes", "url"],
+            "properties": {
+              "id": true, "projection": true, "mimeType": true, "encodedBytes": true, "extensions": true,
+              "role": { "const": "immersion", "description": "A tiled cube shows over its asset's preview cube, so it cannot be one." },
+              "warp": { "enum": ["equi-angular", "gnomonic"], "description": "A face position s in -1 to 1 is the direction forward + w(s) right: w(s) = tan(s pi/4) equi-angular, s gnomonic." },
+              "faceSize": { "$ref": "#/$defs/positiveInteger", "description": "The finest level's face, texels: tileSize times 2 to the number of levels less one." },
+              "tileSize": { "$ref": "#/$defs/positiveInteger", "description": "A tile's logical texels a side." },
+              "gutter": { "type": "integer", "minimum": 0, "description": "Texels a stored tile adds on every side, sampled past its edge; less than half the tile size." },
+              "levelBytes": { "type": "array", "minItems": 1, "maxItems": 8, "items": { "$ref": "#/$defs/positiveInteger" }, "description": "Encoded bytes of each level's tiles, level 0 first; they add up to encodedBytes." },
+              "url": { "allOf": [{ "$ref": "#/$defs/url" }, { "type": "string", "pattern": "/$" }], "description": "The tiles' folder. Tile (face, level, x, y) is <url><face>/<level>/<x>/<y>.jpg, or .png." }
+            },
+            "additionalProperties": false
+          }
+        }
+      ]
     },
     "asset": {
       "type": "object",

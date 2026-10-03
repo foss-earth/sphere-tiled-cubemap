@@ -69,9 +69,10 @@ not wait for all images to show the scene:
 3. Sharpen ready previews toward the existing orb size/density target at lower
    request priority. First previews take priority over background sharpening.
 4. On entry, show the panorama's preview and request the selected immersion
-   representation within the user's image detail and memory limits. Keep the
-   preview visible until the replacement is usable. It requests that selected
-   image directly, without downloading every intermediate size.
+   representation within the user's image detail and memory limits. A tiled
+   cube shows over the preview at once and sharpens as the view's tiles arrive;
+   a whole image replaces the preview once it is usable. Either way it requests
+   the detail it needs directly, without downloading every intermediate size.
 
 Scene replacement and disposal cancel obsolete work. A new camera gesture
 cancels a pending overview move, so terrain arriving later cannot take the
@@ -86,9 +87,10 @@ shows preview readiness separately from waiting for ground and entering a
 panorama. Programs can observe transfers through `loadScene`'s `onProgress`
 option or `SceneController.onProgress`, exported from `foss-earth/scenes`.
 
-This is progressive delivery of separate representations. Each JPEG or PNG
-still finishes before its texture is usable; tiled panoramas and incremental
-JPEG decoding are not implemented.
+A whole image or cube still finishes before its texture is usable. A tiled
+cube is fetched a tile at a time, for the part of the view that needs it, at the
+level it needs: see [Tiled cubes](#tiled-cubes). Incremental JPEG decoding is
+not implemented.
 
 Panoramas render with WebGPU, WebGL 2 or WebGL 1 using the same analytic orb
 geometry and depth. WebGL 1 requires `EXT_frag_depth`,
@@ -203,16 +205,70 @@ Every representation has these fields:
 - `mimeType`: `"image/jpeg"` or `"image/png"`;
 - `encodedBytes`: the prepared files' total size, all six faces summed for a cube.
 
-The two projections add their own fields:
+The projections add their own fields:
 - A **cube** adds `faceSize` in pixels and `faces`, one URL for each of the six faces.
 - An **equirectangular** image adds `width`, `height` (half the width) and `url`.
+- A **tiled cube** (`"tiled-cube"`, immersion only) adds `warp`, `faceSize`, `tileSize`,
+  `gutter`, `levelBytes` and `url`, the tiles' folder: see [Tiled cubes](#tiled-cubes).
+
+A representation of a projection the loader does not know is skipped with a warning,
+and the asset shows its others. So a scene may offer newer kinds of image beside the
+ones an older viewer reads. The schema accepts any projection for the same reason.
 
 The loader uses these sizes to choose a representation within the memory
-budgets before it downloads anything. Inside a panorama it shows the largest
-immersion representation within the panorama tab's image detail, the device's
-texture limit and the budgets, so offer the largest you have: by default every
-budget has room for an image as wide as the renderer's texture limit. An asset of an unknown `type` makes the
-entities that use it unsupported, and the scene still loads.
+budgets before it downloads anything. Inside a panorama it shows the tiled cube
+the person's representation asks for, when the asset has one (360 image settings →
+Image → Representation; equi-angular tiles by default). Otherwise, or with "Whole
+image" chosen, it shows the largest whole immersion representation within the
+panorama tab's image detail, the device's texture limit and the budgets, so offer
+the largest you have: by default every budget has room for an image as wide as the
+renderer's texture limit. An asset of an unknown `type` makes the entities that use
+it unsupported, and the scene still loads.
+
+### Tiled cubes
+
+A tiled cube is a cube of the format's six faces, each cut into a quadtree of square
+tiles, fetched a tile at a time. Level 0 is one tile a face; each level after it
+doubles the face and has four times the tiles. Inside a panorama the loader asks only
+for the tiles the view needs, at the level the view's pixels need, and a few degrees
+around it; a tile not yet there shows the asset's preview cube, which is on the GPU
+already. A view therefore sharpens in about a second on a slow link, where a whole
+image is sharp only once every byte of it has arrived.
+
+| Field | Meaning |
+| --- | --- |
+| `warp` | `"equi-angular"`: a face position s from −1 to 1 is the direction `f + tan(s·π/4)·r` (and likewise along the face's top axis), so texels are spread almost evenly over the face. `"gnomonic"`: the direction is `f + s·r`, an ordinary cube map, coarser at a face's middle and finer at its corners. |
+| `faceSize` | The finest level's face, texels: `tileSize · 2^(levels − 1)` |
+| `tileSize` | A tile's logical texels a side |
+| `gutter` | Texels a stored tile adds on every side, sampled past its edge: inside a face from the neighbouring tile's place, past the face's edge from the next face. A stored tile is `tileSize + 2·gutter` square. 0 or more, and less than half the tile. |
+| `levelBytes` | Each level's tiles' total bytes, level 0 first, 1 to 8 levels. They add up to `encodedBytes`; the loader expects a tile to weigh its level's mean. |
+| `url` | The tiles' folder, ending with `/`. Tile (face, level, x, y) is `<url><face>/<level>/<x>/<y>.jpg`, or `.png` for `image/png`: `face` is `px nx py ny pz nz`, x counts right from 0 and y down from 0, as on the cube face table above. |
+
+`role` must be `"immersion"`: a tiled cube shows over its asset's preview cube, which
+the asset must have anyway. Every level is resampled from the source, not reduced from
+the level above, and the gutter lets each tile be filtered from its own texels alone, so
+no seam shows between tiles, levels or faces. `scripts/check-scene.mjs` checks every
+tile's header for the stored size and every level's bytes.
+
+```json
+{
+  "id": "eac-tiles", "role": "immersion", "projection": "tiled-cube", "warp": "equi-angular",
+  "mimeType": "image/jpeg", "encodedBytes": 4697568, "faceSize": 1536, "tileSize": 192, "gutter": 1,
+  "levelBytes": [68839, 278956, 1032090, 3317683], "url": "media/garden/eac-tiles/"
+}
+```
+
+**Choosing the sizes.** A face of a quarter of the source's width matches its density at
+the horizon: 1536 for a 6144-pixel panorama. 192-texel tiles were the fastest in
+[the prototype's measurements](../../benchmarks/eac-progressive-prototype/REPORT.md), and
+equi-angular faces needed 15% fewer bytes than gnomonic ones for the same view quality.
+`scripts/prepare-panorama.mjs --tiles eac,cube` writes both.
+
+**Loading.** The scheduler, its caches and the levels it chooses follow the person's
+settings: Scenes → Tiled images for tile memory, requests, uploads a frame and the margin
+around the view; the sharpness target and the image detail for the levels; the fades for
+how a tile replaces what was there. A panorama entered again finds its tiles still on
+the GPU while the panorama memory has room for them.
 
 ### Entity: `type: "panorama"`
 
@@ -302,9 +358,12 @@ This sets where the globe camera goes when the scene loads:
 
 ```sh
 node scripts/prepare-panorama.mjs --input garden.jpg --pose garden-pose.json \
-  --preview-face-sizes 64,128 --immersion-widths 2048 \
+  --preview-face-sizes 64,128 --immersion-widths 2048 --tiles eac,cube \
   --attribution "Garden by A. Photographer" --out build/prepared-scenes/garden
 ```
+
+`--tiles eac,cube` adds an equi-angular and a gnomonic tiled cube, in tiles of
+`--tile-size` (192) up to `--tile-face-size` (the input width / 4).
 
 ## Checking a scene before publishing
 

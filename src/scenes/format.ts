@@ -118,7 +118,30 @@ export interface EquirectRepresentationRecord extends RepresentationBase {
   url: string;
 }
 
-export type RepresentationRecord = CubeRepresentationRecord | EquirectRepresentationRecord;
+/**
+ * A cube of square tiles in a quadtree a face, fetched a tile at a time for
+ * the part of the view that needs it (docs/scenes/format.md, "Tiled cubes").
+ * Tile (face, level, x, y) is `<url><face>/<level>/<x>/<y>.<jpg|png>`, of
+ * `tileSize + 2·gutter` texels a side. Immersion only: the panorama's preview
+ * cube shows wherever a tile has not arrived.
+ */
+export interface TiledCubeRepresentationRecord extends RepresentationBase {
+  projection: "tiled-cube";
+  /** How a face position maps to a direction: tan(s·π/4) for "equi-angular", s itself for "gnomonic". */
+  warp: "equi-angular" | "gnomonic";
+  /** The finest level's face, texels: `tileSize · 2^(levels − 1)`. */
+  faceSize: number;
+  /** A tile's logical texels a side. */
+  tileSize: number;
+  /** Texels a stored tile adds on every side, sampled past the tile's edge. */
+  gutter: number;
+  /** Encoded bytes of each level's tiles, level 0 first; they add up to `encodedBytes`. */
+  levelBytes: readonly number[];
+  /** The folder the tiles are in, ending with "/". */
+  url: string;
+}
+
+export type RepresentationRecord = CubeRepresentationRecord | EquirectRepresentationRecord | TiledCubeRepresentationRecord;
 
 export interface PanoramaAssetRecord {
   id: string;
@@ -185,7 +208,13 @@ export interface SceneDocument {
 /** A representation with its URLs resolved against the manifest. */
 export type ResolvedRepresentation =
   | (Omit<CubeRepresentationRecord, "faces"> & { faces: Readonly<Record<CubeFaceName, string>> })
-  | EquirectRepresentationRecord;
+  | EquirectRepresentationRecord
+  | TiledCubeRepresentationRecord;
+
+/** The tiled representations of a resolved asset. */
+export type ResolvedTiledCube = Extract<ResolvedRepresentation, { projection: "tiled-cube" }>;
+/** A representation that is one texture: a cube or an equirectangular image. */
+export type ResolvedWholeRepresentation = Exclude<ResolvedRepresentation, ResolvedTiledCube>;
 
 export interface ResolvedAsset extends Omit<PanoramaAssetRecord, "representations" | "attribution"> {
   attribution: AttributionRecord;

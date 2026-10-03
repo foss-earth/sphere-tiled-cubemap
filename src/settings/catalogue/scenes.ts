@@ -271,6 +271,58 @@ const LOADING: readonly ParameterSpec[] = [
   }),
 ];
 
+/** Bytes of one stored tile of the prepared tiled cubes: 194 texels a side, RGBA. */
+const TILE_BYTES = 194 * 194 * 4;
+/** The tiled cubes' source of truth: the prototype that measured them. */
+const TILE_EVIDENCE = "benchmarks/eac-progressive-prototype";
+
+/**
+ * Scenes → Tiled images: how a tiled cube loads (src/scenes/tiles/). The
+ * sharpness target and the image detail choose its levels, the fades its
+ * tiles fade in over, and the request timeout and largest file bound each
+ * tile; these are what only tiles have.
+ */
+const TILES: readonly ParameterSpec[] = [
+  quantity({
+    id: "scene.panorama.tileMemoryMiB", label: "Tile memory", unit: "MiB", min: 1, max: 1024, fallback: Math.ceil((196 * TILE_BYTES) / MIB * 4) / 4, scale: "log2", step: 0.25, section: "tiles",
+    description: "GPU memory for the tiles of a panorama: one atlas, allocated when the panorama is entered. More keeps more of it sharp when you look back; with less, the view drops a level of detail before it would go without tiles. Part of the panorama GPU memory.",
+    reason: `196 tiles of 194 texels, ${TILE_EVIDENCE}'s setting: a phone's whole view at the finest level and its margin, with room to look around.`, source: RESOURCES,
+  }),
+  quantity({
+    id: "scene.panorama.tileRequests", label: "Tile requests at once", unit: "count", min: 1, max: 16, fallback: 6, step: 1, section: "tiles",
+    description: "Tile downloads in flight at the same time, beside the previews' image requests.",
+    reason: `The fastest in ${TILE_EVIDENCE}'s measurements: two at once were much slower, twelve no faster.`, source: LOADER,
+  }),
+  quantity({
+    id: "scene.panorama.tileUploadsPerFrame", label: "Tiles uploaded per frame", unit: "count", min: 1, max: 64, fallback: 2, step: 1, section: "tiles",
+    description: "Tiles copied to the GPU in one frame. More shows a view you come back to sooner; fewer keeps each frame's work small.",
+    reason: `${TILE_EVIDENCE}'s setting: no frame was late on a desktop, and a view seen before was sharp again in half a second.`, source: LOADER,
+  }),
+  quantity({
+    id: "scene.panorama.tileMarginDeg", label: "Tiles beyond the view", unit: "deg", min: 0, max: 45, fallback: 5, step: 1, section: "tiles",
+    description: "How far past the edge of the view tiles load, after the view's own, so a small turn finds them already there.",
+    reason: `${TILE_EVIDENCE}'s setting.`, source: LOADER,
+  }),
+  quantity({
+    id: "scene.panorama.tileDecodes", label: "Tile decodes at once", unit: "count", min: 1, max: 8, fallback: 2, step: 1, section: "tiles", level: "all",
+    description: "Tiles the browser decodes at the same time.", reason: `${TILE_EVIDENCE}'s setting.`, source: LOADER,
+  }),
+  quantity({
+    id: "scene.panorama.tilesWaiting", label: "Tiles waiting to show", unit: "count", min: 1, max: 64, fallback: 12, step: 1, section: "tiles", level: "all",
+    description: "Tiles downloaded and not yet on screen before no more are asked for, so a fast connection cannot pile up decoding.",
+    reason: `${TILE_EVIDENCE}'s setting.`, source: LOADER,
+  }),
+  quantity({
+    id: "scene.panorama.tileRetries", label: "Tile retries", unit: "count", min: 0, max: 10, fallback: 3, step: 1, section: "tiles", level: "all",
+    description: "How many times a tile that failed is asked for again, each after twice the wait before; then it is left alone for a while. Until it arrives, the preview shows there.",
+    reason: `${TILE_EVIDENCE}'s setting.`, source: LOADER,
+  }),
+  quantity({
+    id: "scene.panorama.tileRetryDelay", label: "First tile retry after", unit: "ms", min: 50, max: 10_000, fallback: 250, scale: "log2", step: 0.25, section: "tiles", level: "all",
+    description: "The wait before a failed tile is first asked for again.", reason: `${TILE_EVIDENCE}'s setting.`, source: LOADER,
+  }),
+];
+
 /** The panorama's tab → Image detail: the one control the tab has, beside what it shows and why. */
 const PANORAMA: readonly ParameterSpec[] = [
   {
@@ -291,6 +343,25 @@ const PANORAMA: readonly ParameterSpec[] = [
 
 /** 360 image settings: what matters only inside a panorama. */
 const PANORAMA_SETTINGS: readonly ParameterSpec[] = [
+  {
+    id: "scene.panorama.representation", label: "Representation",
+    description: "How the photograph arrives inside a panorama, where the panorama offers more than one kind. Tiles load the part of the view that needs them, at the detail it needs, so the view sharpens in a second or two; a whole image is sharp only once all of it has arrived. A panorama without the chosen kind shows the kind it has.",
+    unit: "none", kind: "choice",
+    choices: [
+      { id: "equi-angular-tiles", label: "Equi-angular cube tiles", description: "A cube whose texels are spread evenly over each face: the fewest bytes for the same sharpness." },
+      { id: "cube-tiles", label: "Cube tiles", description: "An ordinary cube map in the same tiles: coarser in the middle of each face, finer at its corners." },
+      { id: "whole", label: "Whole image", description: "One equirectangular image, the largest the image detail allows." },
+    ],
+    default: "equi-angular-tiles",
+    defaultReason: `Measured in ${TILE_EVIDENCE}: at 2 Mbit/s the view was within 1 dB of finished in 1.3 s with equi-angular tiles, where whole images of 4.7 and 5.5 MiB took 20 s and more; and cube tiles needed 15% more bytes for the same quality.`,
+    home: { tab: PANORAMA_SETTINGS_TAB, section: "image", level: "main" }, appliesLive: true, source: LOADER,
+  },
+  {
+    id: "scene.panorama.tileOutlines", label: "Tile outlines",
+    description: "Draws each tile's edges and tints it by its level, from the coarsest: orange, yellow, green and blue; red where the preview shows because no tile has arrived.",
+    unit: "none", kind: "boolean", default: false, defaultReason: "Off shows the photograph; on shows how it loads.",
+    home: { tab: PANORAMA_SETTINGS_TAB, section: "image", level: "main" }, appliesLive: true, source: RENDERER,
+  },
   {
     id: "scene.panorama.immersionDensity", label: "Sharpness target",
     description: "Off, a panorama shows the largest image its image detail allows. A number loads instead the smallest image that gives this many image texels per rendered pixel at the centre of the view, which saves memory and download on small screens.",
@@ -355,13 +426,14 @@ const PANORAMA_SETTINGS: readonly ParameterSpec[] = [
   }),
 ];
 
-export const SCENE_PARAMETERS: readonly ParameterSpec[] = [...CONTENT, ...APPEARANCE, ...MOTION, ...LOADING, ...PANORAMA, ...PANORAMA_SETTINGS];
+export const SCENE_PARAMETERS: readonly ParameterSpec[] = [...CONTENT, ...APPEARANCE, ...MOTION, ...LOADING, ...TILES, ...PANORAMA, ...PANORAMA_SETTINGS];
 
 export const SCENE_SECTION_TITLES: ReadonlyArray<readonly [string, string, string]> = [
   [SCENES_TAB, "content", "Content"],
   [SCENES_TAB, "appearance", "Orbs"],
   [SCENES_TAB, "motion", "Motion"],
   [SCENES_TAB, "loading", "Loading and memory"],
+  [SCENES_TAB, "tiles", "Tiled images"],
   [SCENES_TAB, "credits", "Credits"],
   [PANORAMA_TAB, "photograph", "Photograph"],
   [PANORAMA_TAB, "links", "Links"],

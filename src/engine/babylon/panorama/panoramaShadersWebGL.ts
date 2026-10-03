@@ -5,6 +5,10 @@
  * WebGL textures hold encoded sRGB. Decode before blending and encode once
  * at output, matching WebGPU's native sRGB texture sampling contract.
  *
+ * SOURCE_TILES and NEXT_TILES draw a tiled cube (src/scenes/tiles/) over the
+ * preview cube the same draw samples: panoramaTiles looks the direction's cell
+ * up in the display table and takes one bilinear tap from the atlas.
+ *
  * PANORAMA_LEAN (the renderer.experiments.panoramaShaders parameter) draws
  * the same image with less per-pixel work: the orb's cap angle and window
  * come from the CPU (its depth keeps this shader's arithmetic), immersion
@@ -57,6 +61,74 @@ vec2 panoramaEquirectUvUnit(vec3 d) {
 vec2 panoramaEquirectUv(vec3 imageDirection) {
   return panoramaEquirectUvUnit(normalize(imageDirection));
 }
+
+#if defined(SOURCE_TILES) || defined(NEXT_TILES)
+// A direction in the image's axes: its tiled-cube face, by the format's face
+// table, and (u, v) on it, warped equi-angularly when warp > 0.5.
+vec2 panoramaTileFace(vec3 d, float warp, out float face) {
+  vec3 a = abs(d);
+  float s;
+  float t;
+  float depth;
+  if (a.x >= a.y && a.x >= a.z) {
+    face = d.x > 0.0 ? 0.0 : 1.0;
+    s = d.x > 0.0 ? -d.y : d.y;
+    t = d.z;
+    depth = a.x;
+  } else if (a.y >= a.z) {
+    face = d.y > 0.0 ? 2.0 : 3.0;
+    s = d.y > 0.0 ? d.x : -d.x;
+    t = d.z;
+    depth = a.y;
+  } else {
+    face = d.z > 0.0 ? 4.0 : 5.0;
+    s = d.x;
+    t = d.z > 0.0 ? -d.y : d.y;
+    depth = a.z;
+  }
+  vec2 st = vec2(s, t) / depth;
+  if (warp > 0.5) st = atan(st) * 1.2732395447351628;
+  return vec2(st.x + 1.0, 1.0 - st.y) * 0.5;
+}
+
+// One display-table entry's tile at (u, v), or the preview where it shows none.
+// The tap stays inside the tile's stored texels: its gutter, never a neighbour.
+vec3 panoramaTileTap(sampler2D atlas, vec4 entry, vec2 uv, vec4 shape, vec2 atlasSize, vec3 preview) {
+  float level = floor(entry.b * 255.0 + 0.5) - 1.0;
+  // Rounded: a GPU's exp2 may return 3.9999998 for 4, and the tile would then disagree with the table's cell.
+  float n = floor(exp2(max(level, 0.0)) + 0.5);
+  vec2 tile = min(floor(uv * n), vec2(n - 1.0));
+  vec2 slot = floor(entry.rg * 255.0 + 0.5);
+  vec2 at = slot * shape.w + shape.z + clamp(uv * n - tile, 0.0, 1.0) * shape.y;
+  vec3 tiled = texture2D(atlas, at / atlasSize).rgb;
+  return level < 0.0 ? preview : tiled;
+}
+
+// A tiled cube's colour in a direction: the tile the table shows for its cell,
+// faded in over the one it showed before (in linear light), over the preview.
+// shape: cells, tile size, gutter, stored size (not "layout", a reserved word in WGSL and GLSL ES 3.00); info: atlas width and height, warp, outlines.
+vec3 panoramaTiles(sampler2D atlas, sampler2D table, vec3 preview, vec3 imageDirection, vec4 shape, vec4 info) {
+  float face;
+  vec2 uv = clamp(panoramaTileFace(imageDirection, info.z, face), 0.0, 1.0);
+  float cells = shape.x;
+  vec2 cell = min(floor(uv * cells), vec2(cells - 1.0));
+  vec2 tableSize = vec2(6.0 * cells, 2.0 * cells);
+  vec4 newer = texture2D(table, (vec2(face * cells + cell.x, cell.y) + 0.5) / tableSize);
+  vec4 older = texture2D(table, (vec2(face * cells + cell.x, cells + cell.y) + 0.5) / tableSize);
+  vec3 color = panoramaTileTap(atlas, newer, uv, shape, info.xy, preview);
+  if (newer.a < 1.0) {
+    vec3 before = panoramaTileTap(atlas, older, uv, shape, info.xy, preview);
+    color = panoramaSrgbEncode(mix(panoramaSrgbDecode(before), panoramaSrgbDecode(color), newer.a));
+  }
+  // Tile outlines: each tile's edges a pixel wide, tinted by its level; the preview red.
+  float level = floor(newer.b * 255.0 + 0.5) - 1.0;
+  vec2 inTile = uv * floor(exp2(max(level, 0.0)) + 0.5);
+  vec2 edge = min(fract(inTile), 1.0 - fract(inTile)) / max(fwidth(inTile), vec2(1e-6));
+  vec3 tint = level < 0.0 ? vec3(1.0, 0.35, 0.35) : level < 0.5 ? vec3(1.0, 0.65, 0.25) : level < 1.5 ? vec3(1.0, 1.0, 0.4) : level < 2.5 ? vec3(0.4, 1.0, 0.5) : vec3(0.4, 0.75, 1.0);
+  vec3 outlined = mix(color * tint, vec3(1.0), step(min(edge.x, edge.y), 1.0) * step(-0.5, level));
+  return info.w > 0.5 ? outlined : color;
+}
+#endif
 
 vec4 panoramaSeamlessSample(sampler2D tex, vec2 uv) {
 #ifdef PANORAMA_TEXTURE_GRADIENTS
@@ -113,6 +185,12 @@ uniform sampler2D panoramaEquirect;
 #else
 uniform samplerCube panoramaCube;
 #endif
+#ifdef SOURCE_TILES
+uniform sampler2D tileAtlas;
+uniform sampler2D tileTable;
+uniform vec4 tileLayout;
+uniform vec4 tileAtlasInfo;
+#endif
 varying vec3 vRel;
 ${COMMON}
 
@@ -160,6 +238,9 @@ void main(void) {
   vec4 sampled = panoramaSeamlessSample(panoramaEquirect, panoramaEquirectUv(imageDirection));
 #else
   vec4 sampled = textureCube(panoramaCube, panoramaCubeVector(imageDirection));
+#endif
+#ifdef SOURCE_TILES
+  sampled.rgb = panoramaTiles(tileAtlas, tileTable, sampled.rgb, imageDirection, tileLayout, tileAtlasInfo);
 #endif
 
   float b = c * d;
@@ -240,6 +321,18 @@ uniform sampler2D nextEquirect;
 #ifdef NEXT_CUBE
 uniform samplerCube nextCube;
 #endif
+#ifdef SOURCE_TILES
+uniform sampler2D tileAtlas;
+uniform sampler2D tileTable;
+uniform vec4 tileLayout;
+uniform vec4 tileAtlasInfo;
+#endif
+#ifdef NEXT_TILES
+uniform sampler2D nextTileAtlas;
+uniform sampler2D nextTileTable;
+uniform vec4 nextTileLayout;
+uniform vec4 nextTileAtlasInfo;
+#endif
 #ifdef PANORAMA_LEAN
 varying vec3 vImage;
 #ifdef NEXT_EQUIRECT
@@ -281,6 +374,9 @@ void main(void) {
 #endif
   vec3 nextImage = vec3(dot(nextContent0, v), dot(nextContent1, v), dot(nextContent2, v));
 #endif
+#ifdef SOURCE_TILES
+  color = panoramaTiles(tileAtlas, tileTable, color, imageDirection, tileLayout, tileAtlasInfo);
+#endif
 #ifdef NEXT_EQUIRECT
 #ifdef PANORAMA_LEAN
   color = panoramaSrgbEncode(mix(panoramaSrgbDecode(color), panoramaSrgbDecode(panoramaSeamlessSample(nextEquirect, panoramaEquirectUvUnit(nextImage)).rgb), mixWeight));
@@ -289,7 +385,11 @@ void main(void) {
 #endif
 #endif
 #ifdef NEXT_CUBE
-  color = panoramaSrgbEncode(mix(panoramaSrgbDecode(color), panoramaSrgbDecode(textureCube(nextCube, panoramaCubeVector(nextImage)).rgb), mixWeight));
+  vec3 nextColor = textureCube(nextCube, panoramaCubeVector(nextImage)).rgb;
+#ifdef NEXT_TILES
+  nextColor = panoramaTiles(nextTileAtlas, nextTileTable, nextColor, nextImage, nextTileLayout, nextTileAtlasInfo);
+#endif
+  color = panoramaSrgbEncode(mix(panoramaSrgbDecode(color), panoramaSrgbDecode(nextColor), mixWeight));
 #endif
 #ifdef OUTPUT_DIRECTION
 #ifdef PANORAMA_LEAN
