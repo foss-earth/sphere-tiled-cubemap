@@ -66,13 +66,21 @@ not wait for all images to show the scene:
 2. Load each panorama's smallest preview inside `scene.panorama.previewFaceRange`
    first. Show it as soon as its six faces are downloaded, decoded and uploaded.
    A slow or failed panorama does not block the others.
-3. Sharpen ready previews toward the existing orb size/density target at lower
-   request priority. First previews take priority over background sharpening.
-4. On entry, show the panorama's preview and request the selected immersion
-   representation within the user's image detail and memory limits. A tiled
-   cube shows over the preview at once and sharpens as the view's tiles arrive;
-   a whole image replaces the preview once it is usable. Either way it requests
-   the detail it needs directly, without downloading every intermediate size.
+3. Sharpen only what is drawn larger than it is sharp. An orb on screen whose
+   diameter has more pixels than its preview has texels loads the preview its
+   size asks for at `scene.panorama.previewDensity`, the largest orb first,
+   behind the first previews. An orb that stays small, or out of view, keeps
+   the preview it has: nothing is loaded for a size it has not reached.
+4. On entry, ask for the panorama's largest allowed preview and, while the
+   camera flies in, for the tiles of the view it will open on. The orb's image
+   opens out across the view, and the selected immersion representation shows
+   over it within the user's image detail and memory limits: a tiled cube at
+   once, sharpening as the view's tiles arrive; a whole image once it is
+   usable. Either way it requests the detail it needs directly, without
+   downloading every intermediate size.
+
+Every file is read from the [saved images](#saved-images) before the network is
+asked, so steps 2 to 4 ask for a file only the first time.
 
 Scene replacement and disposal cancel obsolete work. A new camera gesture
 cancels a pending overview move, so terrain arriving later cannot take the
@@ -114,6 +122,43 @@ origin from the app, provided that origin allows fetches from the app with
 CORS. For independent content releases, publish images first and an immutable,
 versioned manifest last; keep earlier media while apps still reference it.
 The scene format does not require images to be bundled with application code.
+
+### Saved images
+
+The loader keeps every image file it downloads, in the browser's IndexedDB,
+and reads it from there the next time: on a reload, on a later visit, and when
+a tile that left the GPU is looked at again. A file is downloaded once.
+
+It can, where the browser's own cache cannot, because of one promise the format
+makes: an asset's `revision` changes whenever any of its files does. A file is
+kept under its asset's id and revision, its representation's id and its URL.
+So:
+
+- **Publishing.** Change an asset's `revision` whenever a file of it changes,
+  whatever the reason: other pixels, another encoder, another size.
+  `prepare-panorama.mjs` derives it from the source image, its settings and
+  its `TOOL_VERSION`, which must go up with any change to what the tool writes
+  for the same input. A scene that changes a file and keeps the revision shows
+  returning visitors the old file.
+- **What is not kept.** The manifest: it is fetched every time, since it is
+  what says which revisions are current.
+- **How much.** Scenes → Saved images sets the limit, `scene.panorama.savedMiB`
+  (256 MiB; 0 keeps nothing), shows what is kept and what the visit took from
+  it, and clears it. Past the limit, the representations unused longest go
+  first, whole. An old revision's files go the same way, since nothing asks for
+  them again.
+- **When it fails.** A kept file is checked as a download is: one whose header
+  is not the image declared, or that the browser cannot decode, is dropped and
+  fetched again. With no IndexedDB, a full disk or a refused write, images come
+  from the network as before.
+
+Why not leave it to HTTP: a static host decides how long the browser may reuse
+a file, and GitHub Pages says ten minutes. After that every file costs a
+request to find it unchanged, and on the UMN tour 306 of 720 such requests
+downloaded the file again (`docs/proposals/panorama-scenes.md`, "Loading
+once"). [`scripts/validation/scene-revisit.mjs`](../../scripts/validation/scene-revisit.mjs)
+counts what a first visit, a reload, a look around and a revisit ask the
+network for, and fails when a build asks for anything twice.
 
 ## Rules for the whole document
 
@@ -193,7 +238,7 @@ different sizes and projections.
 
 | Field | Meaning |
 | --- | --- |
-| `id`, `revision` | The asset's identity. `revision` changes whenever its pixels do; caches key on it. |
+| `id`, `revision` | The asset's identity. `revision` changes whenever any of its files does; the loader [keeps files under it](#saved-images) between visits. |
 | `colorSpace` | `"srgb"`: the only colour space in version 1 |
 | `alpha` | `"opaque"`: panoramas have no transparency |
 | `attribution` | `{ text, license?, url? }`, shown while the image is on screen |
