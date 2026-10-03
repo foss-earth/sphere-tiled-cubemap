@@ -114,13 +114,13 @@ const APPEARANCE: readonly ParameterSpec[] = [
   }),
   quantity({
     id: "scene.panorama.previewDensity", label: "Orb image sharpness", unit: TEXELS_PER_PX, min: 0.25, max: 4, fallback: 1, scale: "log2", step: 0.25, section: "appearance",
-    description: "Image texels per rendered pixel at an orb's centre that preview loading aims for. Higher loads larger previews.",
+    description: "Image texels per rendered pixel at an orb's centre, as it is drawn, that preview loading aims for. Higher loads larger previews.",
     reason: "One texel per pixel, an understandable heuristic; centre density is not a bound on the rim.", source: LOADER,
   }),
   {
-    id: "scene.panorama.previewFaceRange", label: "Preview cube size", description: "The smallest and largest preview cube faces that may be loaded for orbs. Each orb shows its smallest allowed preview first, then sharpens to the orb image sharpness target behind the other first previews.",
+    id: "scene.panorama.previewFaceRange", label: "Preview cube size", description: "The smallest and largest preview cube faces that may be loaded for orbs. Each orb shows its smallest allowed preview first. An orb on screen that is drawn with more pixels than that loads the preview its size asks for at the orb image sharpness, the largest orb first, and entering a panorama loads its largest.",
     unit: "px", kind: "range", bounds: textureSideBounds(16, 2048), step: 1, scale: "log2",
-    default: { min: 64, max: 256 }, defaultReason: "Small previews: 43 cubes of 128 px take about 21.5 MiB with mips.",
+    default: { min: 64, max: 256 }, defaultReason: "A 64 px cube is as sharp as an orb at its smallest on most screens, so a whole scene's first previews are small; 256 px serves an orb at its largest and the moment a panorama opens.",
     home: { tab: SCENES_TAB, section: "appearance", level: "main" }, appliesLive: true, source: LOADER,
   },
   quantity({
@@ -239,8 +239,9 @@ const LOADING: readonly ParameterSpec[] = [
     reason: "Catches an oversized response early. " + PROVISIONAL, source: RESOURCES,
   }),
   quantity({
-    id: "scene.panorama.requests", label: "Image requests at once", unit: "count", min: 1, max: 16, fallback: 4, step: 1, section: "loading",
-    description: "Image downloads in flight at the same time.", reason: "Lets previews load without fanning out across a scene.", source: RESOURCES,
+    id: "scene.panorama.requests", label: "Image requests at once", unit: "count", min: 1, max: 32, fallback: 16, step: 1, section: "loading",
+    description: "Preview and whole-image downloads in flight at the same time; tiles have their own count. An orb's preview is six small files, which wait on the connection's round trips, not on its bandwidth, so more at once shows a scene's orbs sooner. Files already saved are read from the disk and do not count.",
+    reason: "Sixteen showed every orb of a 60-panorama tour in 3 s on its HTTP/2 host, where four took 6 to 19 s (docs/proposals/panorama-scenes.md, \"Loading once\"). Over HTTP/1.1 the browser sends six at once whatever this says.", source: RESOURCES,
   }),
   quantity({
     id: "scene.panorama.decodes", label: "Image decodes at once", unit: "count", min: 1, max: 8, fallback: 1, step: 1, section: "loading", level: "all",
