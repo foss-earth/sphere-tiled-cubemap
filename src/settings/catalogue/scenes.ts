@@ -243,6 +243,13 @@ const LOADING: readonly ParameterSpec[] = [
     description: "Preview and whole-image downloads in flight at the same time; tiles have their own count. An orb's preview is six small files, which wait on the connection's round trips, not on its bandwidth, so more at once shows a scene's orbs sooner. Files already saved are read from the disk and do not count.",
     reason: "Sixteen showed every orb of a 60-panorama tour in 3 s on its HTTP/2 host, where four took 6 to 19 s (docs/proposals/panorama-scenes.md, \"Loading once\"). Over HTTP/1.1 the browser sends six at once whatever this says.", source: RESOURCES,
   }),
+  {
+    id: "scene.panorama.previewSheets", label: "Orb previews in one file",
+    description: "Where a scene has put its orbs' smallest previews into one image, load that image and show every orb from it: one request, not six for each orb. Off, each orb loads its own six files. Either way an orb drawn larger than that preview loads its own sharper one.",
+    unit: "none", kind: "boolean", default: true,
+    defaultReason: "One request shows a scene's orbs. On the UMN tour's build with every response held 100 ms, all 60 orbs were shown 1.5 s after the page opened from the sheet, as the app finished starting, and after 4.0 s from their 360 files sixteen at a time (docs/proposals/panorama-scenes.md, \"Loading once\").",
+    home: { tab: SCENES_TAB, section: "loading", level: "main" }, appliesLive: true, source: RESOURCES,
+  },
   quantity({
     id: "scene.panorama.decodes", label: "Image decodes at once", unit: "count", min: 1, max: 8, fallback: 1, step: 1, section: "loading", level: "all",
     description: "Images the browser decodes at the same time.", reason: "One prevents decode bursts. " + PROVISIONAL, source: RESOURCES,

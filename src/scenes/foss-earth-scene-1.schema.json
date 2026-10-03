@@ -4,26 +4,79 @@
   "title": "foss-earth-scene, version 1",
   "description": "A FOSS Earth scene: panorama assets, where they are placed and how they link. The schema checks the shape of each record. validateScene in foss-earth/scenes also checks what a schema cannot: unique ids, that references exist, the 2:1 equirectangular ratio, at least one preview cube per asset, required extensions, and the size limits. See docs/scenes/format.md.",
   "type": "object",
-  "required": ["format", "version", "id", "revision", "title", "assets", "entities"],
+  "required": [
+    "format",
+    "version",
+    "id",
+    "revision",
+    "title",
+    "assets",
+    "entities"
+  ],
   "additionalProperties": false,
   "properties": {
-    "format": { "const": "foss-earth-scene" },
-    "version": { "const": 1 },
-    "id": { "$ref": "#/$defs/id" },
-    "revision": { "$ref": "#/$defs/text", "description": "Changes on any editorial or placement change." },
-    "title": { "$ref": "#/$defs/text" },
+    "format": {
+      "const": "foss-earth-scene"
+    },
+    "version": {
+      "const": 1
+    },
+    "id": {
+      "$ref": "#/$defs/id"
+    },
+    "revision": {
+      "$ref": "#/$defs/text",
+      "description": "Changes on any editorial or placement change."
+    },
+    "title": {
+      "$ref": "#/$defs/text"
+    },
     "requiredExtensions": {
       "type": "array",
-      "items": { "$ref": "#/$defs/extensionKey" },
+      "items": {
+        "$ref": "#/$defs/extensionKey"
+      },
       "description": "Keys of \"extensions\" a loader must implement to show this scene."
     },
-    "extensions": { "$ref": "#/$defs/extensions" },
-    "assets": { "type": "array", "items": { "$ref": "#/$defs/asset" } },
-    "entities": { "type": "array", "items": { "$ref": "#/$defs/entity" } },
-    "groups": { "type": "array", "items": { "$ref": "#/$defs/group" } },
-    "initialPanorama": { "$ref": "#/$defs/id", "description": "A suggested destination. Loading a scene still opens its overview." },
-    "overview": { "$ref": "#/$defs/overview" },
-    "markerStyle": { "$ref": "#/$defs/markerStyle", "description": "How every orb looks, unless its marker's style overrides it." }
+    "extensions": {
+      "$ref": "#/$defs/extensions"
+    },
+    "assets": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/asset"
+      }
+    },
+    "entities": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/entity"
+      }
+    },
+    "groups": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/group"
+      }
+    },
+    "initialPanorama": {
+      "$ref": "#/$defs/id",
+      "description": "A suggested destination. Loading a scene still opens its overview."
+    },
+    "overview": {
+      "$ref": "#/$defs/overview"
+    },
+    "markerStyle": {
+      "$ref": "#/$defs/markerStyle",
+      "description": "How every orb looks, unless its marker's style overrides it."
+    },
+    "sheets": {
+      "type": "array",
+      "description": "Images that each hold the faces of several preview cubes, so every orb of a scene can be shown after one request. A cube names its place in one with \"sheet\". See \"Preview sheets\" in docs/scenes/format.md.",
+      "items": {
+        "$ref": "#/$defs/sheet"
+      }
+    }
   },
   "$defs": {
     "id": {
@@ -31,7 +84,10 @@
       "pattern": "^[A-Za-z0-9._-]+$",
       "description": "Case-sensitive ASCII, unique in its scope."
     },
-    "text": { "type": "string", "pattern": "\\S" },
+    "text": {
+      "type": "string",
+      "pattern": "\\S"
+    },
     "extensionKey": {
       "type": "string",
       "pattern": "^[a-z0-9-]+(\\.[A-Za-z0-9_-]+)+$",
@@ -40,85 +96,236 @@
     "extensions": {
       "type": "object",
       "description": "Namespaced data for later features. Never executed.",
-      "propertyNames": { "$ref": "#/$defs/extensionKey" },
-      "additionalProperties": { "type": "object" }
+      "propertyNames": {
+        "$ref": "#/$defs/extensionKey"
+      },
+      "additionalProperties": {
+        "type": "object"
+      }
     },
     "url": {
       "type": "string",
       "minLength": 1,
       "description": "http(s), absolute or relative to the manifest's final response URL; no credentials."
     },
-    "headingDeg": { "type": "number", "minimum": 0, "exclusiveMaximum": 360, "description": "Clockwise from true north." },
-    "pitchDeg": { "type": "number", "minimum": -90, "maximum": 90, "description": "Positive above the horizon." },
-    "verticalFovDeg": { "type": "number", "exclusiveMinimum": 0, "exclusiveMaximum": 180 },
-    "longitudeDeg": { "type": "number", "minimum": -180, "exclusiveMaximum": 180 },
-    "latitudeDeg": { "type": "number", "minimum": -90, "maximum": 90 },
-    "positiveInteger": { "type": "integer", "minimum": 1 },
+    "headingDeg": {
+      "type": "number",
+      "minimum": 0,
+      "exclusiveMaximum": 360,
+      "description": "Clockwise from true north."
+    },
+    "pitchDeg": {
+      "type": "number",
+      "minimum": -90,
+      "maximum": 90,
+      "description": "Positive above the horizon."
+    },
+    "verticalFovDeg": {
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "exclusiveMaximum": 180
+    },
+    "longitudeDeg": {
+      "type": "number",
+      "minimum": -180,
+      "exclusiveMaximum": 180
+    },
+    "latitudeDeg": {
+      "type": "number",
+      "minimum": -90,
+      "maximum": 90
+    },
+    "positiveInteger": {
+      "type": "integer",
+      "minimum": 1
+    },
     "height": {
       "description": "Metres above the WGS84 ellipsoid, or null when unknown. Never a silent zero.",
       "oneOf": [
-        { "type": "null" },
+        {
+          "type": "null"
+        },
         {
           "type": "object",
-          "required": ["meters", "datum"],
+          "required": [
+            "meters",
+            "datum"
+          ],
           "additionalProperties": false,
           "properties": {
-            "meters": { "type": "number" },
-            "datum": { "const": "WGS84-ellipsoid" },
-            "source": { "$ref": "#/$defs/text", "description": "Where the value came from, and any conversion made while preparing it." },
-            "uncertaintyMeters": { "type": "number", "minimum": 0 }
+            "meters": {
+              "type": "number"
+            },
+            "datum": {
+              "const": "WGS84-ellipsoid"
+            },
+            "source": {
+              "$ref": "#/$defs/text",
+              "description": "Where the value came from, and any conversion made while preparing it."
+            },
+            "uncertaintyMeters": {
+              "type": "number",
+              "minimum": 0
+            }
           }
         }
       ]
     },
     "view": {
       "type": "object",
-      "required": ["headingDeg", "pitchDeg", "verticalFovDeg"],
+      "required": [
+        "headingDeg",
+        "pitchDeg",
+        "verticalFovDeg"
+      ],
       "additionalProperties": false,
       "properties": {
-        "headingDeg": { "$ref": "#/$defs/headingDeg" },
-        "pitchDeg": { "$ref": "#/$defs/pitchDeg" },
-        "verticalFovDeg": { "$ref": "#/$defs/verticalFovDeg" }
+        "headingDeg": {
+          "$ref": "#/$defs/headingDeg"
+        },
+        "pitchDeg": {
+          "$ref": "#/$defs/pitchDeg"
+        },
+        "verticalFovDeg": {
+          "$ref": "#/$defs/verticalFovDeg"
+        }
       }
     },
     "attribution": {
       "type": "object",
-      "required": ["text"],
+      "required": [
+        "text"
+      ],
       "additionalProperties": false,
       "properties": {
-        "text": { "$ref": "#/$defs/text", "description": "Plain text; never rendered as HTML." },
-        "license": { "$ref": "#/$defs/text" },
-        "url": { "$ref": "#/$defs/url" }
+        "text": {
+          "$ref": "#/$defs/text",
+          "description": "Plain text; never rendered as HTML."
+        },
+        "license": {
+          "$ref": "#/$defs/text"
+        },
+        "url": {
+          "$ref": "#/$defs/url"
+        }
       }
     },
     "representation": {
       "type": "object",
-      "required": ["id", "role", "projection", "mimeType", "encodedBytes"],
+      "required": [
+        "id",
+        "role",
+        "projection",
+        "mimeType",
+        "encodedBytes"
+      ],
       "properties": {
-        "id": { "$ref": "#/$defs/id" },
-        "role": { "enum": ["preview", "immersion"] },
-        "projection": { "type": "string", "description": "\"cube\", \"equirectangular\" or \"tiled-cube\". A loader skips a representation of a later projection, with a warning, and shows the asset's others." },
-        "mimeType": { "enum": ["image/jpeg", "image/png"] },
-        "encodedBytes": { "$ref": "#/$defs/positiveInteger", "description": "The prepared files' total bytes, six faces summed for a cube, every tile for a tiled cube." },
-        "extensions": { "$ref": "#/$defs/extensions" }
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "role": {
+          "enum": [
+            "preview",
+            "immersion"
+          ]
+        },
+        "projection": {
+          "type": "string",
+          "description": "\"cube\", \"equirectangular\" or \"tiled-cube\". A loader skips a representation of a later projection, with a warning, and shows the asset's others."
+        },
+        "mimeType": {
+          "enum": [
+            "image/jpeg",
+            "image/png"
+          ]
+        },
+        "encodedBytes": {
+          "$ref": "#/$defs/positiveInteger",
+          "description": "The prepared files' total bytes, six faces summed for a cube, every tile for a tiled cube."
+        },
+        "extensions": {
+          "$ref": "#/$defs/extensions"
+        }
       },
       "allOf": [
         {
-          "if": { "properties": { "projection": { "const": "cube" } } },
-          "then": {
-            "required": ["faceSize", "faces"],
+          "if": {
             "properties": {
-              "id": true, "role": true, "projection": true, "mimeType": true, "encodedBytes": true, "extensions": true,
-              "faceSize": { "$ref": "#/$defs/positiveInteger" },
+              "projection": {
+                "const": "cube"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "faceSize",
+              "faces"
+            ],
+            "properties": {
+              "id": true,
+              "role": true,
+              "projection": true,
+              "mimeType": true,
+              "encodedBytes": true,
+              "extensions": true,
+              "faceSize": {
+                "$ref": "#/$defs/positiveInteger"
+              },
               "faces": {
                 "type": "object",
                 "description": "Faces named by the format's source axes: X east, Y north, Z up at zero pose. See the cube face table in docs/scenes/format.md.",
-                "required": ["px", "nx", "py", "ny", "pz", "nz"],
+                "required": [
+                  "px",
+                  "nx",
+                  "py",
+                  "ny",
+                  "pz",
+                  "nz"
+                ],
                 "additionalProperties": false,
                 "properties": {
-                  "px": { "$ref": "#/$defs/url" }, "nx": { "$ref": "#/$defs/url" },
-                  "py": { "$ref": "#/$defs/url" }, "ny": { "$ref": "#/$defs/url" },
-                  "pz": { "$ref": "#/$defs/url" }, "nz": { "$ref": "#/$defs/url" }
+                  "px": {
+                    "$ref": "#/$defs/url"
+                  },
+                  "nx": {
+                    "$ref": "#/$defs/url"
+                  },
+                  "py": {
+                    "$ref": "#/$defs/url"
+                  },
+                  "ny": {
+                    "$ref": "#/$defs/url"
+                  },
+                  "pz": {
+                    "$ref": "#/$defs/url"
+                  },
+                  "nz": {
+                    "$ref": "#/$defs/url"
+                  }
+                }
+              },
+              "sheet": {
+                "type": "object",
+                "description": "Where this cube's six faces are in a sheet: px, nx, py, ny, pz and nz from (x, y) rightwards, each faceSize square, the same picture as the face files.",
+                "required": [
+                  "id",
+                  "x",
+                  "y"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "$ref": "#/$defs/id",
+                    "description": "A sheet of this scene."
+                  },
+                  "x": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "y": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
                 }
               }
             },
@@ -126,31 +333,108 @@
           }
         },
         {
-          "if": { "properties": { "projection": { "const": "equirectangular" } } },
-          "then": {
-            "required": ["width", "height", "url"],
+          "if": {
             "properties": {
-              "id": true, "role": true, "projection": true, "mimeType": true, "encodedBytes": true, "extensions": true,
-              "width": { "$ref": "#/$defs/positiveInteger", "description": "Twice the height: a full 2:1 image." },
-              "height": { "$ref": "#/$defs/positiveInteger" },
-              "url": { "$ref": "#/$defs/url" }
+              "projection": {
+                "const": "equirectangular"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "width",
+              "height",
+              "url"
+            ],
+            "properties": {
+              "id": true,
+              "role": true,
+              "projection": true,
+              "mimeType": true,
+              "encodedBytes": true,
+              "extensions": true,
+              "width": {
+                "$ref": "#/$defs/positiveInteger",
+                "description": "Twice the height: a full 2:1 image."
+              },
+              "height": {
+                "$ref": "#/$defs/positiveInteger"
+              },
+              "url": {
+                "$ref": "#/$defs/url"
+              }
             },
             "additionalProperties": false
           }
         },
         {
-          "if": { "properties": { "projection": { "const": "tiled-cube" } } },
-          "then": {
-            "required": ["warp", "faceSize", "tileSize", "gutter", "levelBytes", "url"],
+          "if": {
             "properties": {
-              "id": true, "projection": true, "mimeType": true, "encodedBytes": true, "extensions": true,
-              "role": { "const": "immersion", "description": "A tiled cube shows over its asset's preview cube, so it cannot be one." },
-              "warp": { "enum": ["equi-angular", "gnomonic"], "description": "A face position s in -1 to 1 is the direction forward + w(s) right: w(s) = tan(s pi/4) equi-angular, s gnomonic." },
-              "faceSize": { "$ref": "#/$defs/positiveInteger", "description": "The finest level's face, texels: tileSize times 2 to the number of levels less one." },
-              "tileSize": { "$ref": "#/$defs/positiveInteger", "description": "A tile's logical texels a side." },
-              "gutter": { "type": "integer", "minimum": 0, "description": "Texels a stored tile adds on every side, sampled past its edge; less than half the tile size." },
-              "levelBytes": { "type": "array", "minItems": 1, "maxItems": 8, "items": { "$ref": "#/$defs/positiveInteger" }, "description": "Encoded bytes of each level's tiles, level 0 first; they add up to encodedBytes." },
-              "url": { "allOf": [{ "$ref": "#/$defs/url" }, { "type": "string", "pattern": "/$" }], "description": "The tiles' folder. Tile (face, level, x, y) is <url><face>/<level>/<x>/<y>.jpg, or .png." }
+              "projection": {
+                "const": "tiled-cube"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "warp",
+              "faceSize",
+              "tileSize",
+              "gutter",
+              "levelBytes",
+              "url"
+            ],
+            "properties": {
+              "id": true,
+              "projection": true,
+              "mimeType": true,
+              "encodedBytes": true,
+              "extensions": true,
+              "role": {
+                "const": "immersion",
+                "description": "A tiled cube shows over its asset's preview cube, so it cannot be one."
+              },
+              "warp": {
+                "enum": [
+                  "equi-angular",
+                  "gnomonic"
+                ],
+                "description": "A face position s in -1 to 1 is the direction forward + w(s) right: w(s) = tan(s pi/4) equi-angular, s gnomonic."
+              },
+              "faceSize": {
+                "$ref": "#/$defs/positiveInteger",
+                "description": "The finest level's face, texels: tileSize times 2 to the number of levels less one."
+              },
+              "tileSize": {
+                "$ref": "#/$defs/positiveInteger",
+                "description": "A tile's logical texels a side."
+              },
+              "gutter": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Texels a stored tile adds on every side, sampled past its edge; less than half the tile size."
+              },
+              "levelBytes": {
+                "type": "array",
+                "minItems": 1,
+                "maxItems": 8,
+                "items": {
+                  "$ref": "#/$defs/positiveInteger"
+                },
+                "description": "Encoded bytes of each level's tiles, level 0 first; they add up to encodedBytes."
+              },
+              "url": {
+                "allOf": [
+                  {
+                    "$ref": "#/$defs/url"
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "/$"
+                  }
+                ],
+                "description": "The tiles' folder. Tile (face, level, x, y) is <url><face>/<level>/<x>/<y>.jpg, or .png."
+              }
             },
             "additionalProperties": false
           }
@@ -159,153 +443,367 @@
     },
     "asset": {
       "type": "object",
-      "required": ["id", "type"],
+      "required": [
+        "id",
+        "type"
+      ],
       "properties": {
-        "id": { "$ref": "#/$defs/id" },
-        "type": { "type": "string" }
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "type": {
+          "type": "string"
+        }
       },
-      "if": { "properties": { "type": { "const": "panorama-image" } } },
-      "then": { "$ref": "#/$defs/panoramaAsset" },
+      "if": {
+        "properties": {
+          "type": {
+            "const": "panorama-image"
+          }
+        }
+      },
+      "then": {
+        "$ref": "#/$defs/panoramaAsset"
+      },
       "description": "A panorama-image asset, or a later asset type this version keeps by id only."
     },
     "panoramaAsset": {
       "type": "object",
-      "required": ["id", "revision", "type", "colorSpace", "alpha", "attribution", "representations"],
+      "required": [
+        "id",
+        "revision",
+        "type",
+        "colorSpace",
+        "alpha",
+        "attribution",
+        "representations"
+      ],
       "additionalProperties": false,
       "properties": {
-        "id": { "$ref": "#/$defs/id" },
-        "revision": { "$ref": "#/$defs/text", "description": "Changes whenever the pixels, the representations or their interpretation change." },
-        "type": { "const": "panorama-image" },
-        "colorSpace": { "const": "srgb" },
-        "alpha": { "const": "opaque" },
-        "attribution": { "$ref": "#/$defs/attribution" },
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "revision": {
+          "$ref": "#/$defs/text",
+          "description": "Changes whenever the pixels, the representations or their interpretation change."
+        },
+        "type": {
+          "const": "panorama-image"
+        },
+        "colorSpace": {
+          "const": "srgb"
+        },
+        "alpha": {
+          "const": "opaque"
+        },
+        "attribution": {
+          "$ref": "#/$defs/attribution"
+        },
         "representations": {
           "type": "array",
           "minItems": 1,
-          "items": { "$ref": "#/$defs/representation" },
-          "contains": { "type": "object", "properties": { "role": { "const": "preview" }, "projection": { "const": "cube" } }, "required": ["role", "projection"] },
+          "items": {
+            "$ref": "#/$defs/representation"
+          },
+          "contains": {
+            "type": "object",
+            "properties": {
+              "role": {
+                "const": "preview"
+              },
+              "projection": {
+                "const": "cube"
+              }
+            },
+            "required": [
+              "role",
+              "projection"
+            ]
+          },
           "description": "Complete resolutions of one image. At least one is a preview cube."
         },
-        "extensions": { "$ref": "#/$defs/extensions" }
+        "extensions": {
+          "$ref": "#/$defs/extensions"
+        }
       }
     },
     "link": {
       "type": "object",
-      "required": ["id", "target", "label"],
+      "required": [
+        "id",
+        "target",
+        "label"
+      ],
       "additionalProperties": false,
       "properties": {
-        "id": { "$ref": "#/$defs/id" },
-        "target": { "$ref": "#/$defs/id", "description": "A panorama entity, never a group." },
-        "label": { "$ref": "#/$defs/text" },
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "target": {
+          "$ref": "#/$defs/id",
+          "description": "A panorama entity, never a group."
+        },
+        "label": {
+          "$ref": "#/$defs/text"
+        },
         "direction": {
           "type": "object",
           "description": "Where the link's hotspot sits in the source panorama's east-north-up view. Without it the link is listed only.",
-          "required": ["headingDeg", "pitchDeg"],
+          "required": [
+            "headingDeg",
+            "pitchDeg"
+          ],
           "additionalProperties": false,
           "properties": {
-            "headingDeg": { "$ref": "#/$defs/headingDeg" },
-            "pitchDeg": { "$ref": "#/$defs/pitchDeg" }
+            "headingDeg": {
+              "$ref": "#/$defs/headingDeg"
+            },
+            "pitchDeg": {
+              "$ref": "#/$defs/pitchDeg"
+            }
           }
         },
-        "arrivalView": { "$ref": "#/$defs/view", "description": "Overrides the destination's initial view for this arrival." },
-        "extensions": { "$ref": "#/$defs/extensions" }
+        "arrivalView": {
+          "$ref": "#/$defs/view",
+          "description": "Overrides the destination's initial view for this arrival."
+        },
+        "extensions": {
+          "$ref": "#/$defs/extensions"
+        }
       }
     },
     "entity": {
       "type": "object",
-      "required": ["id", "type"],
+      "required": [
+        "id",
+        "type"
+      ],
       "properties": {
-        "id": { "$ref": "#/$defs/id" },
-        "type": { "type": "string" },
-        "required": { "type": "boolean", "description": "A required entity this loader cannot show fails the scene instead of being listed as unsupported." }
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "type": {
+          "type": "string"
+        },
+        "required": {
+          "type": "boolean",
+          "description": "A required entity this loader cannot show fails the scene instead of being listed as unsupported."
+        }
       },
-      "if": { "properties": { "type": { "const": "panorama" } } },
-      "then": { "$ref": "#/$defs/panorama" },
+      "if": {
+        "properties": {
+          "type": {
+            "const": "panorama"
+          }
+        }
+      },
+      "then": {
+        "$ref": "#/$defs/panorama"
+      },
       "description": "A panorama, or a later entity type that a version 1 loader lists as unsupported."
     },
     "panorama": {
       "type": "object",
-      "required": ["id", "type", "assetId", "title", "capture", "imagePose", "marker"],
+      "required": [
+        "id",
+        "type",
+        "assetId",
+        "title",
+        "capture",
+        "imagePose",
+        "marker"
+      ],
       "additionalProperties": false,
       "properties": {
-        "id": { "$ref": "#/$defs/id" },
-        "type": { "const": "panorama" },
-        "assetId": { "$ref": "#/$defs/id" },
-        "title": { "$ref": "#/$defs/text" },
-        "description": { "$ref": "#/$defs/text" },
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "type": {
+          "const": "panorama"
+        },
+        "assetId": {
+          "$ref": "#/$defs/id"
+        },
+        "title": {
+          "$ref": "#/$defs/text"
+        },
+        "description": {
+          "$ref": "#/$defs/text"
+        },
         "capture": {
           "type": "object",
-          "required": ["longitudeDeg", "latitudeDeg"],
+          "required": [
+            "longitudeDeg",
+            "latitudeDeg"
+          ],
           "additionalProperties": false,
           "properties": {
-            "longitudeDeg": { "$ref": "#/$defs/longitudeDeg" },
-            "latitudeDeg": { "$ref": "#/$defs/latitudeDeg" },
-            "height": { "$ref": "#/$defs/height" },
-            "horizontalAccuracyMeters": { "type": "number", "minimum": 0 }
+            "longitudeDeg": {
+              "$ref": "#/$defs/longitudeDeg"
+            },
+            "latitudeDeg": {
+              "$ref": "#/$defs/latitudeDeg"
+            },
+            "height": {
+              "$ref": "#/$defs/height"
+            },
+            "horizontalAccuracyMeters": {
+              "type": "number",
+              "minimum": 0
+            }
           }
         },
         "imagePose": {
           "type": "object",
           "description": "Maps image directions to the capture's east-north-up frame: R = Rz(-heading) Rx(pitch) Ry(roll), as GPano.",
-          "required": ["headingDeg", "pitchDeg", "rollDeg"],
+          "required": [
+            "headingDeg",
+            "pitchDeg",
+            "rollDeg"
+          ],
           "additionalProperties": false,
           "properties": {
-            "headingDeg": { "$ref": "#/$defs/headingDeg" },
-            "pitchDeg": { "$ref": "#/$defs/pitchDeg" },
-            "rollDeg": { "type": "number", "exclusiveMinimum": -180, "maximum": 180 },
-            "aligned": { "type": "boolean", "description": "Whether the heading was set against true north. False: the image faces an arbitrary direction. Absent: not stated." }
+            "headingDeg": {
+              "$ref": "#/$defs/headingDeg"
+            },
+            "pitchDeg": {
+              "$ref": "#/$defs/pitchDeg"
+            },
+            "rollDeg": {
+              "type": "number",
+              "exclusiveMinimum": -180,
+              "maximum": 180
+            },
+            "aligned": {
+              "type": "boolean",
+              "description": "Whether the heading was set against true north. False: the image faces an arbitrary direction. Absent: not stated."
+            }
           }
         },
         "marker": {
           "type": "object",
-          "required": ["mode", "eastM", "northM", "offsetM"],
+          "required": [
+            "mode",
+            "eastM",
+            "northM",
+            "offsetM"
+          ],
           "additionalProperties": false,
           "properties": {
-            "mode": { "enum": ["ground-relative", "capture-relative"], "description": "capture-relative needs a known capture height." },
-            "eastM": { "type": "number" },
-            "northM": { "type": "number" },
-            "offsetM": { "type": "number" },
-            "radiusMeters": { "type": "number", "exclusiveMinimum": 0 },
-            "style": { "$ref": "#/$defs/markerStyle", "description": "Overrides the scene's markerStyle one property at a time." }
+            "mode": {
+              "enum": [
+                "ground-relative",
+                "capture-relative"
+              ],
+              "description": "capture-relative needs a known capture height."
+            },
+            "eastM": {
+              "type": "number"
+            },
+            "northM": {
+              "type": "number"
+            },
+            "offsetM": {
+              "type": "number"
+            },
+            "radiusMeters": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "style": {
+              "$ref": "#/$defs/markerStyle",
+              "description": "Overrides the scene's markerStyle one property at a time."
+            }
           }
         },
-        "initialView": { "$ref": "#/$defs/view" },
-        "links": { "type": "array", "items": { "$ref": "#/$defs/link" } },
-        "required": { "type": "boolean" },
-        "extensions": { "$ref": "#/$defs/extensions" }
+        "initialView": {
+          "$ref": "#/$defs/view"
+        },
+        "links": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/link"
+          }
+        },
+        "required": {
+          "type": "boolean"
+        },
+        "extensions": {
+          "$ref": "#/$defs/extensions"
+        }
       }
     },
     "group": {
       "type": "object",
-      "required": ["id", "title", "members"],
+      "required": [
+        "id",
+        "title",
+        "members"
+      ],
       "additionalProperties": false,
       "properties": {
-        "id": { "$ref": "#/$defs/id" },
-        "title": { "$ref": "#/$defs/text" },
-        "members": { "type": "array", "items": { "$ref": "#/$defs/id" }, "uniqueItems": true },
-        "extensions": { "$ref": "#/$defs/extensions" }
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "title": {
+          "$ref": "#/$defs/text"
+        },
+        "members": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/id"
+          },
+          "uniqueItems": true
+        },
+        "extensions": {
+          "$ref": "#/$defs/extensions"
+        }
       }
     },
     "overview": {
       "type": "object",
       "description": "The view a scene opens at. Heading and pitch describe the camera's forward direction; negative pitch looks down.",
-      "required": ["target", "distanceMeters", "headingDeg", "pitchDeg", "verticalFovDeg"],
+      "required": [
+        "target",
+        "distanceMeters",
+        "headingDeg",
+        "pitchDeg",
+        "verticalFovDeg"
+      ],
       "additionalProperties": false,
       "properties": {
         "target": {
           "type": "object",
-          "required": ["longitudeDeg", "latitudeDeg"],
+          "required": [
+            "longitudeDeg",
+            "latitudeDeg"
+          ],
           "additionalProperties": false,
           "properties": {
-            "longitudeDeg": { "$ref": "#/$defs/longitudeDeg" },
-            "latitudeDeg": { "$ref": "#/$defs/latitudeDeg" },
-            "height": { "$ref": "#/$defs/height" }
+            "longitudeDeg": {
+              "$ref": "#/$defs/longitudeDeg"
+            },
+            "latitudeDeg": {
+              "$ref": "#/$defs/latitudeDeg"
+            },
+            "height": {
+              "$ref": "#/$defs/height"
+            }
           }
         },
-        "distanceMeters": { "type": "number", "exclusiveMinimum": 0 },
-        "headingDeg": { "$ref": "#/$defs/headingDeg" },
-        "pitchDeg": { "$ref": "#/$defs/pitchDeg" },
-        "verticalFovDeg": { "$ref": "#/$defs/verticalFovDeg" }
+        "distanceMeters": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "headingDeg": {
+          "$ref": "#/$defs/headingDeg"
+        },
+        "pitchDeg": {
+          "$ref": "#/$defs/pitchDeg"
+        },
+        "verticalFovDeg": {
+          "$ref": "#/$defs/verticalFovDeg"
+        }
       }
     },
     "markerStyle": {
@@ -316,14 +814,28 @@
         "outline": {
           "description": "A ring just outside the orb's silhouette.",
           "oneOf": [
-            { "type": "null" },
+            {
+              "type": "null"
+            },
             {
               "type": "object",
-              "required": ["color", "widthPx"],
+              "required": [
+                "color",
+                "widthPx"
+              ],
               "additionalProperties": false,
               "properties": {
-                "color": { "type": "string", "pattern": "^#(?:[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$", "description": "A CSS hex colour, #rrggbb or #rrggbbaa." },
-                "widthPx": { "type": "number", "minimum": 0, "maximum": 32, "description": "CSS px, whatever the orb's distance." }
+                "color": {
+                  "type": "string",
+                  "pattern": "^#(?:[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$",
+                  "description": "A CSS hex colour, #rrggbb or #rrggbbaa."
+                },
+                "widthPx": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 32,
+                  "description": "CSS px, whatever the orb's distance."
+                }
               }
             }
           ]
@@ -331,16 +843,65 @@
         "hover": {
           "description": "While a pointer is over the orb, it grows; entering still takes a click.",
           "oneOf": [
-            { "type": "null" },
+            {
+              "type": "null"
+            },
             {
               "type": "object",
-              "required": ["scale"],
+              "required": [
+                "scale"
+              ],
               "additionalProperties": false,
               "properties": {
-                "scale": { "type": "number", "minimum": 1, "maximum": 4, "description": "Times the orb's size on screen." }
+                "scale": {
+                  "type": "number",
+                  "minimum": 1,
+                  "maximum": 4,
+                  "description": "Times the orb's size on screen."
+                }
               }
             }
           ]
+        }
+      }
+    },
+    "sheet": {
+      "type": "object",
+      "required": [
+        "id",
+        "revision",
+        "mimeType",
+        "width",
+        "height",
+        "encodedBytes",
+        "url"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "revision": {
+          "$ref": "#/$defs/text",
+          "description": "Changes whenever the file does; the loader keeps the file under it between visits."
+        },
+        "mimeType": {
+          "enum": [
+            "image/jpeg",
+            "image/png"
+          ]
+        },
+        "width": {
+          "$ref": "#/$defs/positiveInteger"
+        },
+        "height": {
+          "$ref": "#/$defs/positiveInteger"
+        },
+        "encodedBytes": {
+          "$ref": "#/$defs/positiveInteger"
+        },
+        "url": {
+          "$ref": "#/$defs/url"
         }
       }
     }

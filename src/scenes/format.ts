@@ -109,6 +109,41 @@ export interface CubeRepresentationRecord extends RepresentationBase {
   projection: "cube";
   faceSize: number;
   faces: Readonly<Record<CubeFaceName, string>>;
+  /** Where the same six faces are in one of the scene's sheets, when it has them there. */
+  sheet?: SheetPlaceRecord;
+}
+
+/**
+ * One image that holds the faces of several preview cubes, so that every orb
+ * of a scene can be shown after one request (docs/scenes/format.md, "Preview
+ * sheets"). Each cube in it has its own face files too, which a loader uses
+ * when it does not read sheets or the sheet fails.
+ */
+export interface SheetRecord {
+  id: string;
+  /** Changes whenever the file does; the loader keeps the file under it between visits. */
+  revision: string;
+  mimeType: "image/jpeg" | "image/png";
+  width: number;
+  height: number;
+  encodedBytes: number;
+  url: string;
+}
+
+/**
+ * A cube's place in a sheet: its faces px, nx, py, ny, pz and nz from (x, y)
+ * rightwards, each `faceSize` square.
+ */
+export interface SheetPlaceRecord {
+  id: string;
+  x: number;
+  y: number;
+}
+
+/** A cube's place in a sheet with the sheet itself, its URL resolved. */
+export interface ResolvedSheetPlace extends SheetRecord {
+  x: number;
+  y: number;
 }
 
 export interface EquirectRepresentationRecord extends RepresentationBase {
@@ -195,6 +230,8 @@ export interface SceneDocument {
   requiredExtensions?: readonly string[];
   extensions?: SceneExtensions;
   assets: readonly PanoramaAssetRecord[];
+  /** Images holding several preview cubes' faces each; a cube names its place in one. */
+  sheets?: readonly SheetRecord[];
   entities: readonly (PanoramaEntityRecord | { id: string; type: string; required?: boolean })[];
   groups?: readonly GroupRecord[];
   initialPanorama?: string;
@@ -207,7 +244,7 @@ export interface SceneDocument {
 
 /** A representation with its URLs resolved against the manifest. */
 export type ResolvedRepresentation =
-  | (Omit<CubeRepresentationRecord, "faces"> & { faces: Readonly<Record<CubeFaceName, string>> })
+  | (Omit<CubeRepresentationRecord, "faces" | "sheet"> & { faces: Readonly<Record<CubeFaceName, string>>; sheet?: ResolvedSheetPlace })
   | EquirectRepresentationRecord
   | TiledCubeRepresentationRecord;
 
@@ -248,6 +285,8 @@ export interface ValidatedScene {
   /** Where relative URLs were resolved from. */
   baseUrl: string | null;
   assets: ReadonlyMap<string, ResolvedAsset>;
+  /** The scene's sheets by id, their URLs resolved. */
+  sheets: ReadonlyMap<string, SheetRecord>;
   panoramas: ReadonlyMap<string, ResolvedPanorama>;
   /** Every entity id in document order, supported or not, for the list. */
   entityOrder: readonly string[];

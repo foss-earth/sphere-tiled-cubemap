@@ -64,8 +64,10 @@ not wait for all images to show the scene:
    of image downloads. A ground-relative orb appears once its own ground and
    preview are available.
 2. Load each panorama's smallest preview inside `scene.panorama.previewFaceRange`
-   first. Show it as soon as its six faces are downloaded, decoded and uploaded.
-   A slow or failed panorama does not block the others.
+   first: from the scene's [preview sheet](#preview-sheets) where it has one, one
+   request for every orb, and otherwise as six face files an orb, shown as soon
+   as they are downloaded, decoded and uploaded. A slow or failed panorama does
+   not block the others.
 3. Sharpen only what is drawn larger than it is sharp. An orb on screen whose
    diameter has more pixels than its preview has texels loads the preview its
    size asks for at `scene.panorama.previewDensity`, the largest orb first,
@@ -224,6 +226,7 @@ network for, and fails when a build asks for anything twice.
 | `format`, `version` | yes | `"foss-earth-scene"`, `1` |
 | `id`, `revision`, `title` | yes | The scene's identity; `revision` changes whenever its content does |
 | `assets` | yes | Pixel content, below |
+| `sheets` | no | Images that each hold several preview cubes, so every orb shows after one request: see [Preview sheets](#preview-sheets) |
 | `entities` | yes | What the scene places, below |
 | `groups` | no | `{ id, title, members: [entity ids] }`, ordered lists for the Scenes tab |
 | `initialPanorama` | no | The panorama the list suggests first |
@@ -251,7 +254,8 @@ Every representation has these fields:
 - `encodedBytes`: the prepared files' total size, all six faces summed for a cube.
 
 The projections add their own fields:
-- A **cube** adds `faceSize` in pixels and `faces`, one URL for each of the six faces.
+- A **cube** adds `faceSize` in pixels and `faces`, one URL for each of the six faces. It may
+  add `sheet`, its place in one of the scene's [preview sheets](#preview-sheets).
 - An **equirectangular** image adds `width`, `height` (half the width) and `url`.
 - A **tiled cube** (`"tiled-cube"`, immersion only) adds `warp`, `faceSize`, `tileSize`,
   `gutter`, `levelBytes` and `url`, the tiles' folder: see [Tiled cubes](#tiled-cubes).
@@ -269,6 +273,52 @@ panorama tab's image detail, the device's texture limit and the budgets, so offe
 the largest you have: by default every budget has room for an image as wide as the
 renderer's texture limit. An asset of an unknown `type` makes the entities that use
 it unsupported, and the scene still loads.
+
+### Preview sheets
+
+An orb's preview is six small files, and a scene's first visit asks for six for
+every orb: 360 requests for 60 panoramas, each waiting on a round trip. A sheet
+is one image that holds the faces of many preview cubes, so the scene's orbs all
+show after one request.
+
+```json
+"sheets": [
+  { "id": "previews-64", "revision": "9c1f0a7e42d1", "mimeType": "image/jpeg",
+    "width": 1536, "height": 960, "encodedBytes": 455974, "url": "media/previews-64.jpg" }
+]
+```
+
+and in each cube that is in it:
+
+```json
+{ "id": "preview-64", "role": "preview", "projection": "cube", "faceSize": 64,
+  "faces": { "px": "media/garden/preview-64/px.jpg", "…": "…" },
+  "sheet": { "id": "previews-64", "x": 384, "y": 128 } }
+```
+
+- **Layout.** The cube's faces `px`, `nx`, `py`, `ny`, `pz` and `nz` run
+  rightwards from (`x`, `y`), each `faceSize` square, the first pixel row at the
+  top. A place has to lie inside the sheet.
+- **The face files stay.** `faces` is still required and still names six files
+  with the same picture. A loader that knows no sheets, or has them turned off,
+  or whose sheet failed, loads them. An orb drawn larger than the sheet's cubes
+  loads its own sharper preview as before.
+- **Which cubes.** Put in a sheet the cubes orbs ask for first: the smallest
+  preview inside `scene.panorama.previewFaceRange`, 64 px by default. A cube not
+  asked for first is never read from a sheet's first request.
+- **`revision`** changes whenever the sheet's file does; the loader keeps the
+  sheet under it between visits like any image.
+- **JPEG.** Keep faces at multiples of 8 px, so no JPEG block spans two faces.
+- **Turning it off.** Scenes → Loading and memory → Orb previews in one file
+  (`scene.panorama.previewSheets`).
+
+`scripts/build-preview-sheets.mjs` adds sheets to a scene on disk, and
+`addPreviewSheets` in `scripts/lib/previewSheet.mjs` to a scene a build is
+assembling. They decode the cubes' own face files and encode them again side by
+side, about 4 megapixels a sheet. `check-scene.mjs` decodes each sheet and holds
+every face in it against its file: it must be the same picture.
+[`scripts/validation/preview-sheet.mjs`](../../scripts/validation/preview-sheet.mjs)
+draws an orb from a sheet and from its files on the GPU and compares them.
 
 ### Tiled cubes
 
@@ -409,6 +459,13 @@ node scripts/prepare-panorama.mjs --input garden.jpg --pose garden-pose.json \
 
 `--tiles eac,cube` adds an equi-angular and a gnomonic tiled cube, in tiles of
 `--tile-size` (192) up to `--tile-face-size` (the input width / 4).
+
+Once a scene's assets are prepared and its manifest written, put its orbs' first
+previews in one [sheet](#preview-sheets):
+
+```sh
+node scripts/build-preview-sheets.mjs ../site/tour/scene.json --face-size 64
+```
 
 ## Checking a scene before publishing
 
