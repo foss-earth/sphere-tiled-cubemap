@@ -169,7 +169,10 @@ network for, and fails when a build asks for anything twice.
   version to another is a separate, explicit tool.
 - **Fields:** every record lists its allowed properties. An unknown property is an
   error. Additions go in `extensions`, under a namespaced key such as
-  `"example.tour"`. Extension data is kept, never executed.
+  `"example.tour"`. Extension data is kept, never executed. A loader skips an
+  extension it does not know, so whatever a scene can be shown without belongs
+  there: a viewer from before it still reads the scene. FOSS Earth's own are
+  named `foss-earth.…`; the loader reads `foss-earth.preview-sheets`.
 - **Required extensions:** `requiredExtensions` lists the extensions a scene
   cannot be shown without. A loader that lacks one refuses the scene.
 - **Ids:** nonempty ASCII made of letters, digits, `.`, `_` and `-`. Records
@@ -226,13 +229,12 @@ network for, and fails when a build asks for anything twice.
 | `format`, `version` | yes | `"foss-earth-scene"`, `1` |
 | `id`, `revision`, `title` | yes | The scene's identity; `revision` changes whenever its content does |
 | `assets` | yes | Pixel content, below |
-| `sheets` | no | Images that each hold several preview cubes, so every orb shows after one request: see [Preview sheets](#preview-sheets) |
 | `entities` | yes | What the scene places, below |
 | `groups` | no | `{ id, title, members: [entity ids] }`, ordered lists for the Scenes tab |
 | `initialPanorama` | no | The panorama the list suggests first |
 | `overview` | no | Where the globe camera goes when the scene loads, below |
 | `markerStyle` | no | How every orb looks: an outline, and growth under the pointer, below |
-| `requiredExtensions`, `extensions` | no | See the document rules above |
+| `requiredExtensions`, `extensions` | no | See the document rules above. `extensions` holds the scene's [preview sheets](#preview-sheets) |
 
 ### Asset: `type: "panorama-image"`
 
@@ -254,8 +256,8 @@ Every representation has these fields:
 - `encodedBytes`: the prepared files' total size, all six faces summed for a cube.
 
 The projections add their own fields:
-- A **cube** adds `faceSize` in pixels and `faces`, one URL for each of the six faces. It may
-  add `sheet`, its place in one of the scene's [preview sheets](#preview-sheets).
+- A **cube** adds `faceSize` in pixels and `faces`, one URL for each of the six faces. Its
+  `extensions` may hold its place in one of the scene's [preview sheets](#preview-sheets).
 - An **equirectangular** image adds `width`, `height` (half the width) and `url`.
 - A **tiled cube** (`"tiled-cube"`, immersion only) adds `warp`, `faceSize`, `tileSize`,
   `gutter`, `levelBytes` and `url`, the tiles' folder: see [Tiled cubes](#tiled-cubes).
@@ -281,21 +283,42 @@ every orb: 360 requests for 60 panoramas, each waiting on a round trip. A sheet
 is one image that holds the faces of many preview cubes, so the scene's orbs all
 show after one request.
 
+Sheets are the extension `foss-earth.preview-sheets`. The scene's `extensions`
+list them:
+
 ```json
-"sheets": [
-  { "id": "previews-64", "revision": "9c1f0a7e42d1", "mimeType": "image/jpeg",
-    "width": 1536, "height": 960, "encodedBytes": 455974, "url": "media/previews-64.jpg" }
-]
+"extensions": {
+  "foss-earth.preview-sheets": {
+    "sheets": [
+      { "id": "previews-64", "revision": "9c1f0a7e42d1", "mimeType": "image/jpeg",
+        "width": 1536, "height": 960, "encodedBytes": 455974, "url": "media/previews-64.jpg" }
+    ]
+  }
+}
 ```
 
-and in each cube that is in it:
+and the `extensions` of each cube that is in one give its place:
 
 ```json
 { "id": "preview-64", "role": "preview", "projection": "cube", "faceSize": 64,
   "faces": { "px": "media/garden/preview-64/px.jpg", "…": "…" },
-  "sheet": { "id": "previews-64", "x": 384, "y": 128 } }
+  "extensions": { "foss-earth.preview-sheets": { "id": "previews-64", "x": 384, "y": 128 } } }
 ```
 
+- **Why an extension.** A loader refuses a property it does not know and skips an
+  extension it does not know. Sheets were first written, on 2026-10-03, as the
+  scene's `sheets` and the cube's `sheet`, and every viewer built before that day
+  refused the whole scene: a phone still showing the day before's page from its
+  browser's cache, an hour after the release, showed an error and no tour. As an
+  extension, such a viewer reads the scene and loads the cubes' own files, and the
+  scene may be published before the viewer that reads its sheets. A scene with
+  `sheets` and `sheet` is refused like any unknown property;
+  `build-preview-sheets.mjs` rewrites one.
+- **A sheet that is wrong is left unused.** A sheet or a place the loader cannot
+  read, with a property it does not know, a place outside its sheet or a sheet
+  that is not listed, is a warning in Scenes → Content and that cube loads from
+  its files; the scene still loads. `check-scene.mjs` reports the same warnings
+  as problems, so they are put right before publishing.
 - **Layout.** The cube's faces `px`, `nx`, `py`, `ny`, `pz` and `nz` run
   rightwards from (`x`, `y`), each `faceSize` square, the first pixel row at the
   top. A place has to lie inside the sheet.
@@ -318,7 +341,8 @@ assembling. They decode the cubes' own face files and encode them again side by
 side, about 4 megapixels a sheet. `check-scene.mjs` decodes each sheet and holds
 every face in it against its file: it must be the same picture.
 [`scripts/validation/preview-sheet.mjs`](../../scripts/validation/preview-sheet.mjs)
-draws an orb from a sheet and from its files on the GPU and compares them.
+draws an orb from a sheet and from its files on the GPU and compares them, in
+Chrome and, with `--browser=firefox`, in Firefox.
 
 ### Tiled cubes
 

@@ -39,7 +39,26 @@
       "description": "Keys of \"extensions\" a loader must implement to show this scene."
     },
     "extensions": {
-      "$ref": "#/$defs/extensions"
+      "$ref": "#/$defs/extensions",
+      "type": "object",
+      "properties": {
+        "foss-earth.preview-sheets": {
+          "type": "object",
+          "description": "Preview sheets: images that each hold the faces of several preview cubes, so every orb of a scene can be shown after one request. A cube names its place in one in its own extensions. An extension, so that a loader from before sheets skips it and loads the cubes' own files. See \"Preview sheets\" in docs/scenes/format.md.",
+          "required": [
+            "sheets"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "sheets": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/sheet"
+              }
+            }
+          }
+        }
+      }
     },
     "assets": {
       "type": "array",
@@ -69,13 +88,6 @@
     "markerStyle": {
       "$ref": "#/$defs/markerStyle",
       "description": "How every orb looks, unless its marker's style overrides it."
-    },
-    "sheets": {
-      "type": "array",
-      "description": "Images that each hold the faces of several preview cubes, so every orb of a scene can be shown after one request. A cube names its place in one with \"sheet\". See \"Preview sheets\" in docs/scenes/format.md.",
-      "items": {
-        "$ref": "#/$defs/sheet"
-      }
     }
   },
   "$defs": {
@@ -267,7 +279,35 @@
               "projection": true,
               "mimeType": true,
               "encodedBytes": true,
-              "extensions": true,
+              "extensions": {
+                "type": "object",
+                "properties": {
+                  "foss-earth.preview-sheets": {
+                    "type": "object",
+                    "description": "Where this cube's six faces are in one of the scene's preview sheets: px, nx, py, ny, pz and nz from (x, y) rightwards, each faceSize square, the same picture as the face files.",
+                    "required": [
+                      "id",
+                      "x",
+                      "y"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "id": {
+                        "$ref": "#/$defs/id",
+                        "description": "A sheet of this scene."
+                      },
+                      "x": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "y": {
+                        "type": "integer",
+                        "minimum": 0
+                      }
+                    }
+                  }
+                }
+              },
               "faceSize": {
                 "$ref": "#/$defs/positiveInteger"
               },
@@ -301,30 +341,6 @@
                   },
                   "nz": {
                     "$ref": "#/$defs/url"
-                  }
-                }
-              },
-              "sheet": {
-                "type": "object",
-                "description": "Where this cube's six faces are in a sheet: px, nx, py, ny, pz and nz from (x, y) rightwards, each faceSize square, the same picture as the face files.",
-                "required": [
-                  "id",
-                  "x",
-                  "y"
-                ],
-                "additionalProperties": false,
-                "properties": {
-                  "id": {
-                    "$ref": "#/$defs/id",
-                    "description": "A sheet of this scene."
-                  },
-                  "x": {
-                    "type": "integer",
-                    "minimum": 0
-                  },
-                  "y": {
-                    "type": "integer",
-                    "minimum": 0
                   }
                 }
               }
