@@ -1,4 +1,4 @@
-import { MIB, rgba8Bytes } from "../../scenes/budget";
+import { MIB, rgba8Bytes, tileAtlasLayout } from "../../scenes/budget";
 import type { DerivedDefault, DeviceContext, ParameterBounds, ParameterSpec, ParameterUnit } from "../types";
 
 /**
@@ -205,6 +205,10 @@ const TILES_OF_A_VIEW = 196;
 const TILE_EVIDENCE = "benchmarks/eac-progressive-prototype";
 /** MiB that `count` stored tiles take, up to the control's next quarter MiB. */
 const tilesMiB = (count: number): number => Math.ceil((count * TILE_BYTES) / MIB * 4) / 4;
+/** A prepared tiled cube's shape: 192-texel tiles with a texel of gutter, four levels to 1536-texel faces. */
+const PREPARED_CUBE = { tileSize: 192, gutter: 1, faceSize: 1536 };
+/** GPU MiB of the atlas a tile memory lays out for a prepared cube, up to the next quarter MiB: a square of slots, some empty, and the display table. */
+const atlasMiB = (tileMemoryMiB: number): number => Math.ceil(((tileAtlasLayout(PREPARED_CUBE, tileMemoryMiB * MIB)?.gpuBytes ?? 0) / MIB) * 4) / 4;
 /** The share of the device's memory a panorama's tiles may take: the map's imagery takes the same for its own GPU budget. */
 const DEVICE_MEMORY_SHARE = 32;
 
@@ -233,11 +237,11 @@ function tileMemoryDefault(context: DeviceContext): DerivedDefault<number> {
     : { value: all, derivedFrom: "every tile of a panorama, because this browser does not say how much memory the device has and it has no touch screen" };
 }
 
-/** What stays on the GPU of panoramas not on screen: the tiles of the one left, where the tile memory holds every tile, else nothing. */
+/** What stays on the GPU of panoramas not on screen: the atlas of the one left, where the tile memory holds every tile, else nothing. */
 function keptGpuDefault(context: DeviceContext): DerivedDefault<number> {
   const tiles = tileMemoryDefault(context);
   return tiles.value >= tilesMiB(TILES_OF_A_CUBE)
-    ? { value: tiles.value, derivedFrom: `the tiles of the panorama you left; the tile memory holds ${tiles.derivedFrom}` }
+    ? { value: atlasMiB(tiles.value), derivedFrom: `the tiles of the panorama you left, as their atlas takes them; the tile memory holds ${tiles.derivedFrom}` }
     : { value: 0, derivedFrom: `nothing that is not on screen; the tile memory holds ${tiles.derivedFrom}` };
 }
 
