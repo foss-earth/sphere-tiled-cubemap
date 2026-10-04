@@ -342,7 +342,8 @@ side, about 4 megapixels a sheet. `check-scene.mjs` decodes each sheet and holds
 every face in it against its file: it must be the same picture.
 [`scripts/validation/preview-sheet.mjs`](../../scripts/validation/preview-sheet.mjs)
 draws an orb from a sheet and from its files on the GPU and compares them, in
-Chrome and, with `--browser=firefox`, in Firefox.
+Chrome and, with `--browser=firefox` or `--browser=webkit`, in Firefox and in
+Safari's engine.
 
 ### Tiled cubes
 
