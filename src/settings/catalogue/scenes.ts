@@ -1,5 +1,5 @@
 import { MIB, rgba8Bytes } from "../../scenes/budget";
-import type { DeviceContext, ParameterBounds, ParameterSpec, ParameterUnit } from "../types";
+import type { DerivedDefault, DeviceContext, ParameterBounds, ParameterSpec, ParameterUnit } from "../types";
 
 /**
  * Scenes and their panoramas (docs/proposals/panorama-scenes.md §6), in three
@@ -123,6 +123,13 @@ const APPEARANCE: readonly ParameterSpec[] = [
     default: { min: 64, max: 256 }, defaultReason: "A 64 px cube is as sharp as an orb at its smallest on most screens, so a whole scene's first previews are small; 256 px serves an orb at its largest and the moment a panorama opens.",
     home: { tab: SCENES_TAB, section: "appearance", level: "main" }, appliesLive: true, source: LOADER,
   },
+  {
+    id: "scene.panorama.previewHold", label: "Sharper orb previews kept for",
+    description: "How long an orb keeps a preview sharper than it needs once it is drawn smaller again or leaves the view. Then it goes back to the preview its size needs and gives the sharper one up, which Kept on the GPU when not shown (Loading and memory) holds or frees. While the scene is open keeps every sharper preview an orb has loaded.",
+    unit: "s", kind: "number", named: [{ id: "scene", label: "While the scene is open" }], bounds: () => ({ min: 0, max: 600 }), step: 1, scale: "linear",
+    default: 10, defaultReason: "Long enough to pan away and back over the same orbs without loading them again, short enough that the part of the map you have left soon gives its memory back. " + PROVISIONAL,
+    home: { tab: SCENES_TAB, section: "appearance", level: "main" }, appliesLive: true, source: LOADER,
+  },
   quantity({
     id: "scene.panorama.markerRadiusMeters", label: "Orb radius", unit: "m", min: 0.1, max: 100, fallback: 1, scale: "log2", step: 0.25, section: "appearance",
     description: "The size of an orb whose scene gives none. The on-screen size limits below still apply.",
@@ -188,6 +195,52 @@ function capped(value: number, max: number): number {
   return Math.min(max, Math.ceil(value));
 }
 
+/** Bytes of one stored tile of the prepared tiled cubes: 194 texels a side, RGBA. */
+const TILE_BYTES = 194 * 194 * 4;
+/** The tiles of a prepared cube: four levels of 1536-texel faces in 192-texel tiles, 6 · (1 + 4 + 16 + 64). */
+const TILES_OF_A_CUBE = 510;
+/** A phone's view and its margin, as the prototype held them. */
+const TILES_OF_A_VIEW = 196;
+/** The tiled cubes' source of truth: the prototype that measured them. */
+const TILE_EVIDENCE = "benchmarks/eac-progressive-prototype";
+/** MiB that `count` stored tiles take, up to the control's next quarter MiB. */
+const tilesMiB = (count: number): number => Math.ceil((count * TILE_BYTES) / MIB * 4) / 4;
+/** The share of the device's memory a panorama's tiles may take: the map's imagery takes the same for its own GPU budget. */
+const DEVICE_MEMORY_SHARE = 32;
+
+/**
+ * The tile memory's default, from what the browser says of the device: every
+ * tile of a panorama where 1/32 of its memory holds them, else that share,
+ * and never less than a phone's view and its margin. A browser that does not
+ * say has room, unless it is a touch screen's, most often a phone's.
+ */
+function tileMemoryDefault(context: DeviceContext): DerivedDefault<number> {
+  const all = tilesMiB(TILES_OF_A_CUBE);
+  const view = tilesMiB(TILES_OF_A_VIEW);
+  if (context.deviceMemoryGiB) {
+    const share = Math.floor((context.deviceMemoryGiB * 1024) / DEVICE_MEMORY_SHARE * 4) / 4;
+    const value = Math.min(all, Math.max(view, share));
+    const of = `1/${DEVICE_MEMORY_SHARE} of the ${context.deviceMemoryGiB} GiB the browser reports`;
+    return {
+      value,
+      derivedFrom: value === all ? `every tile of a panorama, which ${of} holds`
+        : value === view ? `a phone's view and its margin, ${TILES_OF_A_VIEW} tiles, more than ${of}`
+          : of,
+    };
+  }
+  return context.touch
+    ? { value: view, derivedFrom: `a phone's view and its margin, ${TILES_OF_A_VIEW} tiles, because this touch screen's browser does not say how much memory the device has` }
+    : { value: all, derivedFrom: "every tile of a panorama, because this browser does not say how much memory the device has and it has no touch screen" };
+}
+
+/** What stays on the GPU of panoramas not on screen: the tiles of the one left, where the tile memory holds every tile, else nothing. */
+function keptGpuDefault(context: DeviceContext): DerivedDefault<number> {
+  const tiles = tileMemoryDefault(context);
+  return tiles.value >= tilesMiB(TILES_OF_A_CUBE)
+    ? { value: tiles.value, derivedFrom: `the tiles of the panorama you left; the tile memory holds ${tiles.derivedFrom}` }
+    : { value: 0, derivedFrom: `nothing that is not on screen; the tile memory holds ${tiles.derivedFrom}` };
+}
+
 /**
  * Scenes → Loading and memory. The budgets serve both sides: the orbs'
  * previews load on the globe and the whole images inside a panorama, from
@@ -205,6 +258,14 @@ const LOADING: readonly ParameterSpec[] = [
       return { value: capped(PREVIEW_ROOM_MIB + 2 * widestGpuMiB(width), 4096), derivedFrom: `${PREVIEW_ROOM_MIB} MiB of previews and two ${width} px images with mips, for ${from}` };
     },
     defaultReason: `Room for the orbs' previews (${PREVIEW_ROOM_MIB} MiB: 64 cubes of 256 px faces) and two of the widest images the renderer can hold, the one on screen and a sharper one replacing it, so no panorama stays below the largest image it offers.`,
+    home: { tab: SCENES_TAB, section: "loading", level: "main" }, appliesLive: true, source: RESOURCES,
+  },
+  {
+    id: "scene.panorama.keptGpuMiB", label: "Kept on the GPU when not shown",
+    description: "GPU memory that panorama images no longer on screen may keep, so that going back to them shows them at once: the tiles of a panorama you left, a preview an orb no longer shows. Past this, the ones unused longest are given up first. Their files stay in the saved images, so going back reads them from the disk, not the network. 0 keeps only what is on screen. Part of the panorama GPU memory.",
+    unit: "MiB", kind: "number", bounds: () => ({ min: 0, max: 4096 }), step: 0.25, scale: "linear",
+    default: keptGpuDefault,
+    defaultReason: "Where the tile memory holds every tile of a panorama, the tiles of the one you left, so going back to it is immediate. Where it holds less, nothing: the GPU holds only what you look at, and going back reads the tiles from the saved images, which took 0.4 to 0.8 s a view on the UMN tour's build (docs/proposals/panorama-scenes.md, \"Loading once\").",
     home: { tab: SCENES_TAB, section: "loading", level: "main" }, appliesLive: true, source: RESOURCES,
   },
   {
@@ -279,13 +340,6 @@ const LOADING: readonly ParameterSpec[] = [
   }),
 ];
 
-/** Bytes of one stored tile of the prepared tiled cubes: 194 texels a side, RGBA. */
-const TILE_BYTES = 194 * 194 * 4;
-/** The tiles of a prepared cube: four levels of 1536-texel faces in 192-texel tiles, 6 · (1 + 4 + 16 + 64). */
-const TILES_OF_A_CUBE = 510;
-/** The tiled cubes' source of truth: the prototype that measured them. */
-const TILE_EVIDENCE = "benchmarks/eac-progressive-prototype";
-
 /**
  * Scenes → Tiled images: how a tiled cube loads (src/scenes/tiles/). The
  * sharpness target and the image detail choose its levels, the fades its
@@ -293,11 +347,14 @@ const TILE_EVIDENCE = "benchmarks/eac-progressive-prototype";
  * tile; these are what only tiles have.
  */
 const TILES: readonly ParameterSpec[] = [
-  quantity({
-    id: "scene.panorama.tileMemoryMiB", label: "Tile memory", unit: "MiB", min: 1, max: 1024, fallback: Math.ceil((TILES_OF_A_CUBE * TILE_BYTES) / MIB * 4) / 4, scale: "log2", step: 0.25, section: "tiles",
-    description: "The most GPU memory the tiles of a panorama may take: one atlas, allocated when the panorama is entered, with a slot for each of its tiles up to this. With room for all of them, a part you looked at stays sharp when you look back. With less, the tiles out of view give up their slots and are read again from the saved images, and the view drops a level of detail before it would go without tiles. Part of the panorama GPU memory.",
-    reason: `Every tile of a panorama as the tools prepare it: ${TILES_OF_A_CUBE} tiles of 194 texels, about what its whole 6144 px image takes. Nothing looked at is loaded twice. ${TILE_EVIDENCE} ran on 196 tiles, a phone's view and its margin; a turn right round at a laptop's window needs more, and brought tiles back in on every look back.`, source: RESOURCES,
-  }),
+  {
+    id: "scene.panorama.tileMemoryMiB", label: "Tile memory",
+    description: "The most GPU memory the tiles of a panorama may take: one atlas, allocated when the panorama is entered, with a slot for each of its tiles up to this. With room for all of them, a part you looked at stays sharp when you look back. With less, the GPU holds the view and its margin: the tiles out of view give up their slots and are read again from the saved images when you look back, and the view drops a level of detail before it would go without tiles. Part of the panorama GPU memory.",
+    unit: "MiB", kind: "number", bounds: () => ({ min: 1, max: 1024 }), step: 0.25, scale: "log2",
+    default: tileMemoryDefault,
+    defaultReason: `Every tile of a panorama as the tools prepare it, ${TILES_OF_A_CUBE} tiles of 194 texels (${tilesMiB(TILES_OF_A_CUBE)} MiB, about what its whole 6144 px image takes), where 1/${DEVICE_MEMORY_SHARE} of the device's memory holds them, as the map's imagery takes for its own: nothing looked at is loaded twice. A device with less keeps its GPU for the view: that share, and no less than a phone's view and its margin, the ${TILES_OF_A_VIEW} tiles (${tilesMiB(TILES_OF_A_VIEW)} MiB) ${TILE_EVIDENCE} ran on; what it looked at before comes back from the saved images.`,
+    home: { tab: SCENES_TAB, section: "tiles", level: "main" }, appliesLive: true, source: RESOURCES,
+  },
   quantity({
     id: "scene.panorama.tileRequests", label: "Tile requests at once", unit: "count", min: 1, max: 16, fallback: 6, step: 1, section: "tiles",
     description: "Tile downloads in flight at the same time, beside the previews' image requests.",
