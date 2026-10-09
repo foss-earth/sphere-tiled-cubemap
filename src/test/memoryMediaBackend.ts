@@ -1,4 +1,4 @@
-import type { MediaGroupRecord, MediaStoreBackend, SavedFile } from "../scenes/mediaStore";
+import type { MediaGroupRecord, MediaStoreBackend, SavedFile } from "@foss-earth/images";
 
 /** The storage as a map, with a quota in bytes and a count of what each call did. */
 export function memoryBackend(options: { quotaBytes?: number } = {}) {
@@ -11,6 +11,16 @@ export function memoryBackend(options: { quotaBytes?: number } = {}) {
     async read(keys) {
       calls.read += 1;
       return keys.map(key => files.get(key)?.file ?? null);
+    },
+    async readBounded(requests) {
+      calls.read += 1;
+      return requests.map(({ key, group, admission }) => {
+        const entry = files.get(key);
+        if (!entry || entry.group !== group || entry.file.bytes.byteLength > admission.maxBytes || !admission.admit(entry.file.bytes.byteLength)) return null;
+        // Exact metadata and bytes come from this same immutable map entry;
+        // admission precedes the allocating copy, like the common v2 backend.
+        return { ...entry.file, bytes: entry.file.bytes.slice() };
+      });
     },
     async write(pending, now) {
       calls.write += 1;

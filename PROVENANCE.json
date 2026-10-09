@@ -1,0 +1,601 @@
+{
+  "schemaVersion": 1,
+  "repository": "foss-earth/tiled-cubemap",
+  "sourceRepository": "foss-earth/foss-earth.github.io",
+  "sourceCommit": "90e23b3ee96f53ec5900afc5991a21fffa58649d",
+  "sourceMaps": [
+    {
+      "path": "src/scenes/tiles/cubeTiling.ts",
+      "gitBlob": "a53c0a11de78ad65fff4e91a98bcf782290ab7eb",
+      "sha256": "e74d0ee2f0f237397e1434f237819975ba032db1416304718ca1d564ca2b941c",
+      "destinations": [
+        "src/cubeTiling.ts"
+      ],
+      "transformations": [
+        "Canonical cubemap/core conventions and common image vectors; emitted ESM paths. Host tick/transport/stages preserve scheduler authority."
+      ],
+      "preparedDestinations": {
+        "src/cubeTiling.ts": "c6a48b5d09b170976725e868db6d39339d145825e0a80eb4935edd04256c72dc"
+      }
+    },
+    {
+      "path": "src/scenes/tiles/sphericalRegions.ts",
+      "gitBlob": "248f8d0f85bb9624133b302a8892f114741b080b",
+      "sha256": "9db5477a732b5fe3eed4505da60db1a3d074145417c00ffd97be63ab1eba4df9",
+      "destinations": [
+        "src/sphericalRegions.ts"
+      ],
+      "transformations": [
+        "Canonical cubemap/core conventions and common image vectors; emitted ESM paths. Host tick/transport/stages preserve scheduler authority."
+      ],
+      "preparedDestinations": {
+        "src/sphericalRegions.ts": "224a7795d8c6837ccf8489bdb69f9a5a2dc7f28b582a837c9465d13f91201e52"
+      }
+    },
+    {
+      "path": "src/scenes/tiles/tileSelection.ts",
+      "gitBlob": "2ccc596139d608e3a32e549c218f1e6f824f9112",
+      "sha256": "2b366f659bc979c044ef5fb3c6663fafd538b269adf63bc65a94addc0250db09",
+      "destinations": [
+        "src/tileSelection.ts"
+      ],
+      "transformations": [
+        "Canonical cubemap/core conventions and common image vectors; emitted ESM paths. Host tick/transport/stages preserve scheduler authority."
+      ],
+      "preparedDestinations": {
+        "src/tileSelection.ts": "75299e4c4423cb65fe20fa4eeb94b0252497e5a8e41eacd0dca06d10c7064538"
+      }
+    },
+    {
+      "path": "src/scenes/tiles/tileScheduler.ts",
+      "gitBlob": "3b2fede23d1e1e05bb31605858fbeb9abb9bec42",
+      "sha256": "968accb9d1f8b89c0de4d7c315806728ade16e34b92de66365eb02b49a89bb8d",
+      "destinations": [
+        "src/tileScheduler.ts"
+      ],
+      "transformations": [
+        "Canonical cubemap/core conventions and common image vectors; emitted ESM paths. Host tick/transport/stages preserve scheduler authority."
+      ],
+      "preparedDestinations": {
+        "src/tileScheduler.ts": "2478fb1dd1e24e2724adc328f2a48f48359f4ca58d4021f70214b859f904be26"
+      }
+    },
+    {
+      "path": "src/scenes/tiles/cubeTiling.test.ts",
+      "gitBlob": "84a9b2e145fc0797f456833995e9054143ab5e20",
+      "sha256": "5289af551d2a2d8a6159dd39a9c448804cd0f09baf20011f46f8a66e7110a0e6",
+      "destinations": [
+        "src/cubeTiling.test.ts"
+      ],
+      "transformations": [
+        "Canonical cubemap/core conventions and common image vectors; emitted ESM paths. Host tick/transport/stages preserve scheduler authority."
+      ],
+      "preparedDestinations": {
+        "src/cubeTiling.test.ts": "be8d85f8fb16821d08eb6a890f15fb1954342ccef913a42662c09f0a8c640f51"
+      }
+    },
+    {
+      "path": "src/scenes/tiles/tileSelection.test.ts",
+      "gitBlob": "e8310d540ca1b717e16a40d4d8f152763de43531",
+      "sha256": "33764865d48bca15cca97023f64e8d8aa37c6dacc58ef9e2a51ff5ed0762eda7",
+      "destinations": [
+        "src/tileSelection.test.ts"
+      ],
+      "transformations": [
+        "Canonical cubemap/core conventions and common image vectors; emitted ESM paths. Host tick/transport/stages preserve scheduler authority."
+      ],
+      "preparedDestinations": {
+        "src/tileSelection.test.ts": "32f45101aab7d688b9cf1d0f66231970bd5a87b77f18d6b73c622641d1b6426e"
+      }
+    },
+    {
+      "path": "src/scenes/tiles/tileScheduler.test.ts",
+      "gitBlob": "06abb10537aef1009241c796ae4c6b0e5a39325c",
+      "sha256": "ec6e2e4f3bf24d03cabffea22c2e81038d47e08a7093592d7b1b6c8f363c2d98",
+      "destinations": [
+        "src/tileScheduler.test.ts"
+      ],
+      "transformations": [
+        "Canonical cubemap/core conventions and common image vectors; emitted ESM paths. Host tick/transport/stages preserve scheduler authority."
+      ],
+      "preparedDestinations": {
+        "src/tileScheduler.test.ts": "83fab9b4c1552663275d6fda7b4870733b6ddea5a226d89a0bf35484451ac92a"
+      }
+    },
+    {
+      "path": "src/scenes/budget.ts",
+      "gitBlob": "e90822ddd01fcc6b7ed137d98960e61d600400f2",
+      "sha256": "bad5aa6efb442860c9f482d52464ef71cb03fd6710457774e041df46e38898fc",
+      "destinations": [
+        "src/layout.ts"
+      ],
+      "transformations": [
+        "Tile atlas layout/count only; exact table overhead retained; common byte/pool code stays images and selection stays360."
+      ],
+      "preparedDestinations": {
+        "src/layout.ts": "eb81e9a88c865d088ed8de1e1bc5de103a6d8c185a220d30dda60fc618011a58"
+      }
+    },
+    {
+      "path": "LICENSE",
+      "gitBlob": "be3f7b28e564e7dd05eaf59d64adba1a4065ac0e",
+      "sha256": "0d96a4ff68ad6d4b6f1f30f713b18d5184912ba8dd389f86aa7710db079abcb0",
+      "destinations": [
+        "LICENSE"
+      ],
+      "transformations": [
+        "Preserved original notice/license bytes."
+      ],
+      "preparedDestinations": {
+        "LICENSE": "0d96a4ff68ad6d4b6f1f30f713b18d5184912ba8dd389f86aa7710db079abcb0"
+      }
+    },
+    {
+      "path": "NOTICE",
+      "gitBlob": "cd6a1d92cce505eaeea37e9726a2f98a0a61a12d",
+      "sha256": "323da85db96d02ed0cf48db889efa184037f538f002e868aeeff396ebb44a993",
+      "destinations": [
+        "NOTICE"
+      ],
+      "transformations": [
+        "Preserved original notice/license bytes."
+      ],
+      "preparedDestinations": {
+        "NOTICE": "323da85db96d02ed0cf48db889efa184037f538f002e868aeeff396ebb44a993"
+      }
+    },
+    {
+      "path": "src/scenes/format.ts",
+      "gitBlob": "d17f92db372fc717f79299883273381dc62093f1",
+      "sha256": "2971a50f5f0c99623dc1da3ef83412f8d8d2100c081081e1556d1749fff6cc81",
+      "destinations": [
+        "src/representation.ts"
+      ],
+      "transformations": [
+        "Tiled record fields only; common records from images."
+      ],
+      "preparedDestinations": {
+        "src/representation.ts": "95e2eaa7b5b7acfaa29f150e5b7979bff45894bf287ca8aa99e1d735f53b5d65"
+      }
+    },
+    {
+      "path": "src/scenes/validateScene.ts",
+      "gitBlob": "d864e4825e9809efb29f162b76e66d7869accecd",
+      "sha256": "c3666bdfbe6b27b59229652a1b784861268b789db9a364cc0ebfc53c9962e0d4",
+      "destinations": [
+        "src/representation.ts"
+      ],
+      "transformations": [
+        "Original tiled branch through common checker; leaf URL/level/byte/gutter rules retained."
+      ],
+      "preparedDestinations": {
+        "src/representation.ts": "95e2eaa7b5b7acfaa29f150e5b7979bff45894bf287ca8aa99e1d735f53b5d65"
+      }
+    },
+    {
+      "path": "src/scenes/foss-earth-scene-1.schema.json",
+      "gitBlob": "a83ccf08f8652f8d7f61af1117d45c0635ec4360",
+      "sha256": "6ed4f3361c86b4c408ed09eb4b90c332250f8ab6fdf20bd13bc32d5fd8cd87e4",
+      "destinations": [
+        "schema/representation.json"
+      ],
+      "transformations": [
+        "Only tiled conditional branch and reachable shared definitions."
+      ],
+      "preparedDestinations": {
+        "schema/representation.json": "30b335df928301439fe093e52683e8d6275b685cd7d7727df554bf16023e03e6"
+      }
+    },
+    {
+      "path": "src/scenes/tiles/tiledPanorama.ts",
+      "destinations": [
+        "src/browser/index.ts"
+      ],
+      "gitBlob": "d4c9ef9183263fcd688af8816f879a1af461bf32",
+      "sha256": "fe2c6c6dc4daf450dab7ceaada029a07e20732e49875e0309160ecadef0dfc7a",
+      "transformations": [
+        "Only tiled orchestration: cache/header/transport/decode are injected public images ports; atlas is renderer-backed; one host frame and per-source priority.",
+        "Reliable common input hold acquired before native callback and released after return/throw; reentrant cancellation cannot close input early. Preserve synchronous capture contract."
+      ],
+      "preparedDestinations": {
+        "src/browser/index.ts": "a0708f9cdce52a50301603f5f4597ea4d620717e58c64f28f73bae0163c45cc5"
+      }
+    },
+    {
+      "path": "src/scenes/tiles/tiledPanorama.test.ts",
+      "destinations": [
+        "src/browser/integration.test.ts"
+      ],
+      "gitBlob": "6316027770eee778606b3f8e5649805a72976f6e",
+      "sha256": "90e5a484f1b174c1808a52291b450ade42559d9e5f83ecd471f6d54a9b282897",
+      "transformations": [
+        "Original acquisition/header/response/retry/persistent-cache assertions routed through actual common public services.",
+        "Original fixtures retained; two actual common-service reentrant native-copy cancellation cases added, UNRUN."
+      ],
+      "preparedDestinations": {
+        "src/browser/integration.test.ts": "33d8b7728778c1a62608db49cca94d2e58824d35f5c077827e60dfac7cfa7894"
+      }
+    },
+    {
+      "path": "src/test/memoryMediaBackend.ts",
+      "destinations": [
+        "src/test/memoryMediaBackend.ts"
+      ],
+      "gitBlob": "1b07121325713e92b6917a7bb620846b2cc1dfdc",
+      "sha256": "10ca908da8d67ab2b1b7d17005ab044617e0568263c2b39c0770af12d58b8151",
+      "transformations": [
+        "Original test-only memory backend; exact metadata admission precedes fixture copy under the new bounded common contract."
+      ],
+      "preparedDestinations": {
+        "src/test/memoryMediaBackend.ts": "c1b16ea207fb2cb6fa364ae95ca50adb35fff3249242c6dff5a7606a046dec3e"
+      }
+    },
+    {
+      "path": "src/engine/babylon/panorama/panoramaTileAtlas.ts",
+      "destinations": [
+        "src/browser/tileAtlas.ts",
+        "src/browser/tileAtlas.test.ts"
+      ],
+      "gitBlob": "9caeb95894b673d7f16995191f978640ac71ddfe",
+      "sha256": "7b33074646f755fe7d6b6c973fa9361a46efcbf10c7c1e9d10aadd587721618c",
+      "transformations": [
+        "Mixed original source: tiled owns layout, slot origins, table geometry and sampling flags; native allocation/copy/state/completion belongs renderer. Pre-admission/cleanup/refusal are authored compatibility changes."
+      ],
+      "preparedDestinations": {
+        "src/browser/tileAtlas.ts": "bcafb0346f12677f7bebabd670a0b4e8322f0315f3b2004ffbb6ecf5ecdf9b2e",
+        "src/browser/tileAtlas.test.ts": "b147d172e65dfadeb7a26ecedba15a7cd5d37ec71d45deddb24b991042370698"
+      }
+    },
+    {
+      "path": "src/engine/babylon/panorama/panoramaShaders.ts",
+      "destinations": [
+        "src/shaders.ts"
+      ],
+      "gitBlob": "c78ca8b124c65925fd9d07b481d5ebfa1a1e110b",
+      "sha256": "85d6a817382c02849a96c45d4cd10a0dd86b54536828be18c6b5cc90c49fb425",
+      "transformations": [
+        "Only original tiled WGSL lookup/gutter/fallback/linear fade fragment; shader assembly/device initialization stays 360/renderer."
+      ],
+      "preparedDestinations": {
+        "src/shaders.ts": "87613865503474decbc95e41fd1659b9fe8a1e34d15214720df8fb6ea680a35a"
+      }
+    },
+    {
+      "path": "src/engine/babylon/panorama/panoramaShadersWebGL.ts",
+      "destinations": [
+        "src/shaders.ts"
+      ],
+      "gitBlob": "129533f6e8a93ea1c76f8192f98d5d00c0ea5d71",
+      "sha256": "c87f75894ae5a51a6d22a9fd972567d29ed699621dc1201966b2c01d6b2dec62",
+      "transformations": [
+        "Only original tiled GLSL lookup/gutter/fallback/encoded-storage/linear fade fragment."
+      ],
+      "preparedDestinations": {
+        "src/shaders.ts": "87613865503474decbc95e41fd1659b9fe8a1e34d15214720df8fb6ea680a35a"
+      }
+    },
+    {
+      "path": "scripts/lib/panoramaImage.mjs",
+      "destinations": [
+        "src/preparation.ts",
+        "src/preparation.test.ts"
+      ],
+      "gitBlob": "4e5b38536812b9505cdabb8b506eb06da32f654d",
+      "sha256": "4aeac1958ee2ff3417c3b84c785c9ee206fa9fcad2fd1fd782288652ab19d5e4",
+      "transformations": [
+        "Only original renderTileFace sample grid/warp/gutters with public ImageSamplingPlan. renderCubeTile preserves identical full-face crop without full-face allocation. Source codecs/pyramid/whole/cube generation remain other owners."
+      ],
+      "preparedDestinations": {
+        "src/preparation.ts": "ef0a9578ddcd168f89cf9ac98022186cb4c0828bceeae39e55bafe681bb95166",
+        "src/preparation.test.ts": "a4ce8f01c07b3cad383d04be9bc5e7a0327e35aa4a9ed365d12cc9907664da17"
+      }
+    },
+    {
+      "path": "src/settings/catalogue/scenes.ts",
+      "destinations": [
+        "src/catalogue.ts",
+        "tests/settings.test.ts"
+      ],
+      "gitBlob": "cd175ed979ed93f29fd171388a49212766924278",
+      "sha256": "e05cf3d5b6a02e72a390965bca7c2a950e75a2f7690ca905fcdc766f6c71dd5d",
+      "transformations": [
+        "Tiled records/device forecasts with unchanged IDs/homes/reasons; newly exposed .75 view share/8 backoff preserve prior constants. Common image loading/saved/preview settings remain their owners."
+      ],
+      "preparedDestinations": {
+        "src/catalogue.ts": "b8f3e5b7afdc03bb6bcc8dcef4bc005765ecf18c3fb932ba84ce82a9739570e9",
+        "tests/settings.test.ts": "da0112613ed0cd61e51d22d443af7904c95c32484637c42c66f32b90f80bf50a"
+      }
+    },
+    {
+      "path": "src/scenes/panoramaResources.ts",
+      "destinations": [
+        "src/browser/index.ts"
+      ],
+      "gitBlob": "d9791774a301fed0bd074f5ed98f94956cd5edf2",
+      "sha256": "d1311f2eb3af959ad612b9eb53de30a0fc9841f3fce8b7772dcb08e84451e13e",
+      "transformations": [
+        "Only tiled resource scope/acquisition boundary; common handle cache/pools/files stay images, dispatch and viewer composition stay 360.",
+        "Reliable common input hold acquired before native callback and released after return/throw; reentrant cancellation cannot close input early. Preserve synchronous capture contract."
+      ],
+      "preparedDestinations": {
+        "src/browser/index.ts": "a0708f9cdce52a50301603f5f4597ea4d620717e58c64f28f73bae0163c45cc5"
+      }
+    },
+    {
+      "path": "docs/scenes/format.md",
+      "destinations": [
+        "README.md"
+      ],
+      "gitBlob": "447ac4ac75de5adf0dc28ffe388dc72bd47789b5",
+      "sha256": "22423cf21f4cb6f2a098f210ad15b0faadb86761aaa5ad7b2407b8aafbe5828f",
+      "transformations": [
+        "Tiled format/file/gutter/ancestor-fallback guidance only; envelope/placements/navigation stay scenes."
+      ],
+      "preparedDestinations": {
+        "README.md": "a40288df31dc91a5a4cbd539c52ef000b10a06773dded14f62469586a9a15eeb"
+      }
+    }
+  ],
+  "status": "source draft; lineage, checks, policy and adoption pending",
+  "sourceTree": "c68d1fabd9fce19e255ea89c65502666d0f74a27",
+  "preparedStatus": "SOURCE ONLY; all new checks/build/pack/installed consumers/conformance/history/adoption unrun and unaccepted",
+  "authoredChanges": [
+    "Atomic table pre-admission/refusal retry and old/new on-screen retention; submitted grants remain renderer-owned.",
+    "Named unchanged-default view share/backoff controls, public input validation, synchronous transport and reentrant disposal guards.",
+    "Per-source queue priority, metadata-before-copy test cache adapter, causal tests and guarded exact-archive harness.",
+    {
+      "change": "Retain actual common decoded input across synchronous tile upload including reentrant scope disposal; independent capacity unsubscribe cleanup.",
+      "files": [
+        "src/browser/index.ts",
+        "src/browser/integration.test.ts",
+        "README.md"
+      ],
+      "nativeContract": "Image/table input capture completes synchronously before adapter return; deferred adapters need explicit admitted snapshot or hold.",
+      "fixtures": "Two actual common-service cancellation-in-copy fixtures added; UNRUN.",
+      "qualification": null
+    }
+  ],
+  "sharedCI": {
+    "revision": "9e046dd482e0229dc7c7b2d71b079d5905664656",
+    "artifactSha256": "450ede699f55f9b9c78146eadb73de7c6297e56553e7d7f9e5b164786a7beb24",
+    "sizeBytes": 55587,
+    "policySha256": "9ca88bf5861685e22e65e5f39fa65b05faaf9c218875fccbecce1b9f2dca5bd3",
+    "status": "Primary-generated scaffold preserved; installed owner conformance/full-ref and actual public/remote admission pending",
+    "preservedFileSha256": {
+      ".attribution.json": "e4493f3031a5051398339cf9649a8e18efb8ece96f512761d8d145daf8347f7a",
+      ".attribution-release.json": "c5324ea9476d99afbc5f63e9d5a15d597dd7ee27546499c392046b55fc361131",
+      ".github/workflows/attribution-check.yml": "63349507da9d004752bb0e43c681089dfd9fd6c26bf8047738cb19025f15135e",
+      "AGENTS.md": "13387fd921b72b4df3e052171e17e79044fa77be7abede4280a6eea32690925d",
+      "CONTRIBUTING.md": "2809e5e1a88cbe2ad01f4cadb23004f5b10ee62a7866c431f67ace7a2d76ba85"
+    }
+  },
+  "authoredPreparedFiles": [
+    {
+      "path": ".gitignore",
+      "sha256": "b93944dbf95cad1850d916ab7483bccf6251109364e63f7e5802ae656a4a93fb",
+      "classification": "Authored extraction adapter/fixture/config/docs; no original blob or source authorship inferred."
+    },
+    {
+      "path": "docs/admission.md",
+      "sha256": "0f9ca91b1692e2717f1b42b3ce66ea5d9bcf94a44938140ea5107e95a98f465e",
+      "classification": "Authored extraction adapter/fixture/config/docs; no original blob or source authorship inferred."
+    },
+    {
+      "path": "eslint.config.js",
+      "sha256": "2fdc99da5622f3559ede66cc1e9d4157f1c86b9b8fbdb096460343ed13ff4f1f",
+      "classification": "Authored extraction adapter/fixture/config/docs; no original blob or source authorship inferred."
+    },
+    {
+      "path": "fixtures/public-consumer.ts",
+      "sha256": "9f9c213134eb1af63fc82547ad6927283286ecf8539e847aa00c3dc759186482",
+      "classification": "Authored extraction adapter/fixture/config/docs; no original blob or source authorship inferred."
+    },
+    {
+      "path": "fixtures/pure-consumer.ts",
+      "sha256": "2a0e713e72a416c1db14a4477251f224b9011339b62757fe8cae1f6fe190d39a",
+      "classification": "Authored extraction adapter/fixture/config/docs; no original blob or source authorship inferred."
+    },
+    {
+      "path": "package.json",
+      "sha256": "65768bc8c7a72ea53ac2bbec7477666105d3a5be0394b11097f713e44e3e5bc2",
+      "classification": "Authored extraction adapter/fixture/config/docs; no original blob or source authorship inferred."
+    },
+    {
+      "path": "scripts/check-installed-artifact.mjs",
+      "sha256": "a048df7cf0fc49ad08f45915e84b916ada419968b59df6f694c663458d2f8ee5",
+      "classification": "Authored extraction adapter/fixture/config/docs; no original blob or source authorship inferred."
+    },
+    {
+      "path": "src/core.ts",
+      "sha256": "deb44c56037c00cee474ce4279f737c1c22e847daa7f50070ec8a55eea69a3af",
+      "classification": "Authored extraction adapter/fixture/config/docs; no original blob or source authorship inferred."
+    },
+    {
+      "path": "src/index.ts",
+      "sha256": "a321f2e2a96eb2606c1b74a867c341d6ccec2a76f060cb46cc65d30db123aa5b",
+      "classification": "Authored extraction adapter/fixture/config/docs; no original blob or source authorship inferred."
+    },
+    {
+      "path": "tests/representation.test.ts",
+      "sha256": "05263818778620dc0606f816e5be174822ae94d9811fc83a01ddc74047cb26dc",
+      "classification": "Authored extraction adapter/fixture/config/docs; no original blob or source authorship inferred."
+    },
+    {
+      "path": "tests/runtime.test.ts",
+      "sha256": "c51bf6f539fa2bd65e699ebdc0297ccef5eb81a917ed637670d4143df166a595",
+      "classification": "Authored extraction adapter/fixture/config/docs; no original blob or source authorship inferred."
+    },
+    {
+      "path": "tsconfig.json",
+      "sha256": "d651eea9e4473e1a7eccc8ef43563bab184af90c1128483d4678219ceeecde47",
+      "classification": "Authored extraction adapter/fixture/config/docs; no original blob or source authorship inferred."
+    },
+    {
+      "path": "vitest.config.ts",
+      "sha256": "021c7e58a5b6a018ffe19c5baa7b22b6f79cb12683a35c6dcd7318cec74472f0",
+      "classification": "Authored extraction adapter/fixture/config/docs; no original blob or source authorship inferred."
+    }
+  ],
+  "primarySourceSnapshot": {
+    "createdAtUtc": "2026-10-09T19-31-19Z",
+    "status": "source-only; no qualification or artifact seal",
+    "authoredFiles": [
+      {
+        "path": ".attribution-release.json",
+        "sha256": "c5324ea9476d99afbc5f63e9d5a15d597dd7ee27546499c392046b55fc361131",
+        "bytes": 2045,
+        "status": "authored source/scaffold/adapter/fixture; UNRUN"
+      },
+      {
+        "path": ".attribution.json",
+        "sha256": "e4493f3031a5051398339cf9649a8e18efb8ece96f512761d8d145daf8347f7a",
+        "bytes": 491,
+        "status": "authored source/scaffold/adapter/fixture; UNRUN"
+      },
+      {
+        "path": ".gitignore",
+        "sha256": "b93944dbf95cad1850d916ab7483bccf6251109364e63f7e5802ae656a4a93fb",
+        "bytes": 41,
+        "status": "authored source/scaffold/adapter/fixture; UNRUN"
+      },
+      {
+        "path": "AGENTS.md",
+        "sha256": "13387fd921b72b4df3e052171e17e79044fa77be7abede4280a6eea32690925d",
+        "bytes": 402,
+        "status": "authored source/scaffold/adapter/fixture; UNRUN"
+      },
+      {
+        "path": "CODE_OF_CONDUCT.md",
+        "sha256": "c3a907b9e659a0f5a4c701be1b34a7d416526c3a99f129bf4d3b9db09c7ffa9d",
+        "bytes": 3442,
+        "status": "authored source/scaffold/adapter/fixture; UNRUN"
+      },
+      {
+        "path": "CONTRIBUTING.md",
+        "sha256": "9cffe385c472d7466e980f1b9859b4f446ed729e924dbc8bde667896dfa187d1",
+        "bytes": 1668,
+        "status": "authored source/scaffold/adapter/fixture; UNRUN"
+      },
+      {
+        "path": "SECURITY.md",
+        "sha256": "6baf6d3c1755360f5d902275c893074fd17af2fc10c140fe932b8a90d77d9942",
+        "bytes": 791,
+        "status": "authored source/scaffold/adapter/fixture; UNRUN"
+      },
+      {
+        "path": "SOURCE_LINEAGE.json",
+        "sha256": "425357299cdf871b087d0a28aa143bc831176899794021bede52d6cfba6a87f1",
+        "bytes": 7749,
+        "status": "authored source/scaffold/adapter/fixture; UNRUN"
+      },
+      {
+        "path": "eslint.config.js",
+        "sha256": "2fdc99da5622f3559ede66cc1e9d4157f1c86b9b8fbdb096460343ed13ff4f1f",
+        "bytes": 657,
+        "status": "authored source/scaffold/adapter/fixture; UNRUN"
+      },
+      {
+        "path": "package.json",
+        "sha256": "65768bc8c7a72ea53ac2bbec7477666105d3a5be0394b11097f713e44e3e5bc2",
+        "bytes": 2626,
+        "status": "authored source/scaffold/adapter/fixture; UNRUN"
+      },
+      {
+        "path": "tsconfig.json",
+        "sha256": "d651eea9e4473e1a7eccc8ef43563bab184af90c1128483d4678219ceeecde47",
+        "bytes": 548,
+        "status": "authored source/scaffold/adapter/fixture; UNRUN"
+      },
+      {
+        "path": "vitest.config.ts",
+        "sha256": "021c7e58a5b6a018ffe19c5baa7b22b6f79cb12683a35c6dcd7318cec74472f0",
+        "bytes": 250,
+        "status": "authored source/scaffold/adapter/fixture; UNRUN"
+      },
+      {
+        "path": ".github/workflows/attribution-check.yml",
+        "sha256": "63349507da9d004752bb0e43c681089dfd9fd6c26bf8047738cb19025f15135e",
+        "bytes": 406,
+        "status": "authored source/scaffold/adapter/fixture; UNRUN"
+      },
+      {
+        "path": "docs/admission.md",
+        "sha256": "0f9ca91b1692e2717f1b42b3ce66ea5d9bcf94a44938140ea5107e95a98f465e",
+        "bytes": 1621,
+        "status": "authored source/scaffold/adapter/fixture; UNRUN"
+      },
+      {
+        "path": "fixtures/public-consumer.ts",
+        "sha256": "9f9c213134eb1af63fc82547ad6927283286ecf8539e847aa00c3dc759186482",
+        "bytes": 1800,
+        "status": "authored source/scaffold/adapter/fixture; UNRUN"
+      },
+      {
+        "path": "fixtures/pure-consumer.ts",
+        "sha256": "2a0e713e72a416c1db14a4477251f224b9011339b62757fe8cae1f6fe190d39a",
+        "bytes": 608,
+        "status": "authored source/scaffold/adapter/fixture; UNRUN"
+      },
+      {
+        "path": "scripts/check-installed-artifact.mjs",
+        "sha256": "a048df7cf0fc49ad08f45915e84b916ada419968b59df6f694c663458d2f8ee5",
+        "bytes": 14746,
+        "status": "authored source/scaffold/adapter/fixture; UNRUN"
+      },
+      {
+        "path": "src/core.ts",
+        "sha256": "deb44c56037c00cee474ce4279f737c1c22e847daa7f50070ec8a55eea69a3af",
+        "bytes": 173,
+        "status": "authored source/scaffold/adapter/fixture; UNRUN"
+      },
+      {
+        "path": "src/index.ts",
+        "sha256": "a321f2e2a96eb2606c1b74a867c341d6ccec2a76f060cb46cc65d30db123aa5b",
+        "bytes": 64,
+        "status": "authored source/scaffold/adapter/fixture; UNRUN"
+      },
+      {
+        "path": "tests/representation.test.ts",
+        "sha256": "05263818778620dc0606f816e5be174822ae94d9811fc83a01ddc74047cb26dc",
+        "bytes": 2565,
+        "status": "authored source/scaffold/adapter/fixture; UNRUN"
+      },
+      {
+        "path": "tests/runtime.test.ts",
+        "sha256": "c51bf6f539fa2bd65e699ebdc0297ccef5eb81a917ed637670d4143df166a595",
+        "bytes": 7526,
+        "status": "authored source/scaffold/adapter/fixture; UNRUN"
+      }
+    ],
+    "checksExecuted": [],
+    "sourceRemoved": false,
+    "canonicalAppConsumerAdoption": null,
+    "acceptedArtifacts": []
+  },
+  "installedHarnessSourceCorrection": {
+    "status": "SOURCE-ONLY; strict qualification and all new causal fixture changes UNRUN",
+    "exclusiveAssignment": "Earth handoff 2026-10-09T19:13Z",
+    "beforeEvidence": "build/source-only/2026-10-09T19-18-09Z-installed-harness-corrections",
+    "beforeManifestSha256": "1d06464bd337cc153d05b8b3dd79eb6becfe28f3af001dcab7c67bc2c687b307",
+    "changes": [
+      "Installed physical package name, pinned version and package/manifest realpaths verified for every explicit archive",
+      "Public declaration qualification uses skipLibCheck:false; original pure declaration and browser type-library choices are preserved",
+      "No runtime production, public export, dependency or lock changes",
+      "Actual common ImageFileService native decoded holds replace legacy mock; original assertions retained and reentrant cancellation/throwing-copy installed causal cases added"
+    ],
+    "files": [
+      {
+        "path": "scripts/check-installed-artifact.mjs",
+        "sha256": "a048df7cf0fc49ad08f45915e84b916ada419968b59df6f694c663458d2f8ee5",
+        "bytes": 14746
+      },
+      {
+        "path": "README.md",
+        "sha256": "00d6ef624254652bf2ed091188e727c444cbd0379833b8ac49d4e23a8a25b81c",
+        "bytes": 8834
+      }
+    ],
+    "checksExecuted": [],
+    "acceptedArtifact": null
+  }
+}
