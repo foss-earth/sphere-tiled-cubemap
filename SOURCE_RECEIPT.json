@@ -1,16 +1,16 @@
 {
   "schemaVersion": 1,
   "owner": "foss-earth/tiled-cubemap",
-  "preparedAtUtc": "2026-10-09T19-31-19Z",
+  "preparedAtUtc": "2026-10-09T19-40-56Z",
   "status": "SOURCE-ONLY current bytes; checks/history/installed consumers/artifacts/adoption/admission UNRUN",
   "sourceRevision": "90e23b3ee96f53ec5900afc5991a21fffa58649d",
-  "priorSourceReceipt": "build/source-only/2026-10-09T19-31-19Z/SOURCE_RECEIPT.json.before",
-  "sourceManifestPath": "build/source-only/2026-10-09T19-31-19Z/source-manifest.json",
+  "priorSourceReceipt": "build/source-only/2026-10-09T19-40-56Z/SOURCE_RECEIPT.json.before",
+  "sourceManifestPath": "build/source-only/2026-10-09T19-40-56Z/source-manifest.json",
   "sourceManifestEncoding": "UTF-8 sorted path JSON array, indent2, trailing LF; ignored outputs and receipt excluded",
-  "sourceManifestSha256": "e60bf3e87b288b55d96c461ac3611cbb67901366d5d637538b0b983097252a74",
+  "sourceManifestSha256": "68756279495286d7c5ceed0d8d4af4e964f0f5c2b346cbc0d771019e4c3f94e6",
   "sourceFileCount": 45,
   "provenancePath": "PROVENANCE.json",
-  "provenanceSha256": "4562a3ca5dc8e1d055e7e428735959b73e44b5ed06c03494225f42405165dee5",
+  "provenanceSha256": "efe97fb008a56070d908d8f55c0e2cf8a527487beefd137dfe2cc9835d675a97",
   "publicExports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -91,7 +91,7 @@
     },
     {
       "path": "PROVENANCE.json",
-      "sha256": "4562a3ca5dc8e1d055e7e428735959b73e44b5ed06c03494225f42405165dee5",
+      "sha256": "efe97fb008a56070d908d8f55c0e2cf8a527487beefd137dfe2cc9835d675a97",
       "bytes": 26536
     },
     {
@@ -131,8 +131,8 @@
     },
     {
       "path": "package.json",
-      "sha256": "65768bc8c7a72ea53ac2bbec7477666105d3a5be0394b11097f713e44e3e5bc2",
-      "bytes": 2626
+      "sha256": "828485aa64a617131cc49f495ca4361be072c5f144dc258f50dbaae49ebd7c30",
+      "bytes": 2721
     },
     {
       "path": "schema/representation.json",
@@ -226,8 +226,8 @@
     },
     {
       "path": "src/tileScheduler.test.ts",
-      "sha256": "83fab9b4c1552663275d6fda7b4870733b6ddea5a226d89a0bf35484451ac92a",
-      "bytes": 16458
+      "sha256": "8cf1912b73dadbd208531ca99de2b62edc5073da144a785e4d6e8fbba92c97bc",
+      "bytes": 16425
     },
     {
       "path": "src/tileScheduler.ts",
@@ -251,8 +251,8 @@
     },
     {
       "path": "tests/runtime.test.ts",
-      "sha256": "c51bf6f539fa2bd65e699ebdc0297ccef5eb81a917ed637670d4143df166a595",
-      "bytes": 7526
+      "sha256": "86311ab1be7662cd737ca46978ed2878c064f7ed59ddc8df655c1d1d372e0708",
+      "bytes": 7675
     },
     {
       "path": "tests/settings.test.ts",

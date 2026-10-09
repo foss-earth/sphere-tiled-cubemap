@@ -99,7 +99,7 @@
         "Canonical cubemap/core conventions and common image vectors; emitted ESM paths. Host tick/transport/stages preserve scheduler authority."
       ],
       "preparedDestinations": {
-        "src/tileScheduler.test.ts": "83fab9b4c1552663275d6fda7b4870733b6ddea5a226d89a0bf35484451ac92a"
+        "src/tileScheduler.test.ts": "8cf1912b73dadbd208531ca99de2b62edc5073da144a785e4d6e8fbba92c97bc"
       }
     },
     {
@@ -397,7 +397,7 @@
     },
     {
       "path": "package.json",
-      "sha256": "65768bc8c7a72ea53ac2bbec7477666105d3a5be0394b11097f713e44e3e5bc2",
+      "sha256": "828485aa64a617131cc49f495ca4361be072c5f144dc258f50dbaae49ebd7c30",
       "classification": "Authored extraction adapter/fixture/config/docs; no original blob or source authorship inferred."
     },
     {
@@ -422,7 +422,7 @@
     },
     {
       "path": "tests/runtime.test.ts",
-      "sha256": "c51bf6f539fa2bd65e699ebdc0297ccef5eb81a917ed637670d4143df166a595",
+      "sha256": "86311ab1be7662cd737ca46978ed2878c064f7ed59ddc8df655c1d1d372e0708",
       "classification": "Authored extraction adapter/fixture/config/docs; no original blob or source authorship inferred."
     },
     {
@@ -437,7 +437,7 @@
     }
   ],
   "primarySourceSnapshot": {
-    "createdAtUtc": "2026-10-09T19-31-19Z",
+    "createdAtUtc": "2026-10-09T19-40-56Z",
     "status": "source-only; no qualification or artifact seal",
     "authoredFiles": [
       {
@@ -496,8 +496,8 @@
       },
       {
         "path": "package.json",
-        "sha256": "65768bc8c7a72ea53ac2bbec7477666105d3a5be0394b11097f713e44e3e5bc2",
-        "bytes": 2626,
+        "sha256": "828485aa64a617131cc49f495ca4361be072c5f144dc258f50dbaae49ebd7c30",
+        "bytes": 2721,
         "status": "authored source/scaffold/adapter/fixture; UNRUN"
       },
       {
@@ -562,8 +562,8 @@
       },
       {
         "path": "tests/runtime.test.ts",
-        "sha256": "c51bf6f539fa2bd65e699ebdc0297ccef5eb81a917ed637670d4143df166a595",
-        "bytes": 7526,
+        "sha256": "86311ab1be7662cd737ca46978ed2878c064f7ed59ddc8df655c1d1d372e0708",
+        "bytes": 7675,
         "status": "authored source/scaffold/adapter/fixture; UNRUN"
       }
     ],

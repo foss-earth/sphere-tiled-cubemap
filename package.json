@@ -46,7 +46,11 @@
     "PROVENANCE.json",
     "README.md",
     "NOTICE",
-    "SOURCE_LINEAGE.json"
+    "SOURCE_LINEAGE.json",
+    "SOURCE_RECEIPT.json",
+    "CODE_OF_CONDUCT.md",
+    "SECURITY.md",
+    "CONTRIBUTING.md"
   ],
   "dependencies": {
     "@foss-earth/images": "0.1.0",

@@ -131,8 +131,7 @@ describe("the tile scheduler", () => {
     h.scheduler.dispose();
   });
   it("does not publish or release a decoded image twice after reentrant upload disposal", async () => {
-    let h: ReturnType<typeof harness>;
-    h = harness({ onUpload: () => h.scheduler.dispose(), limits: { fadeMs: 0 } });
+    const h = harness({ onUpload: () => h.scheduler.dispose(), limits: { fadeMs: 0 } });
     const view = phoneView(0);
     h.tick(view); h.deliverAll(); h.tick(view); await h.decodeAll();
     expect(h.tick(view)).toBe(false);

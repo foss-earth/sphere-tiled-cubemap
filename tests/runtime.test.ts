@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { createImageSessionBroker, type ImageFile, type ImageOperationScope, type ImageSessionBroker } from "@foss-earth/images";
-import type { EncodedImageFile } from "@foss-earth/images/browser";
+import { decodeImageFile, type EncodedImageFile } from "@foss-earth/images/browser";
 import type { BaseTexture } from "@babylonjs/core";
 import type { ImageRegionDevicePorts, UploadTicket } from "@foss-earth/renderer/babylon";
 import { createTiledPanorama } from "../src/browser/index.js";
@@ -31,14 +31,18 @@ function fixture(shared?: ImageSessionBroker) {
   const wake = vi.fn(), close = vi.fn();
   const obtain = vi.fn(async (_file: ImageFile, bytes: number, operation: ImageOperationScope, _onChunk?: (bytes: number) => void, _priority?: number) => {
     const grant = operation.reserve("encoded", bytes, "fixture body");
-    return { bytes: new Uint8Array(bytes), contentType: "image/png", retain: () => grant.retain(), release: () => grant.release() };
+    const body = new Uint8Array(Math.max(33, bytes));
+    grant.resize(body.byteLength);
+    body.set([137, 80, 78, 71, 13, 10, 26, 10]);
+    const header = new DataView(body.buffer);
+    header.setUint32(8, 13); body.set([73, 72, 68, 82], 12);
+    header.setUint32(16, 10); header.setUint32(20, 10); body[24] = 8; body[25] = 6;
+    return { bytes: body, contentType: "image/png", retain: () => grant.retain(), release: () => grant.release() };
   });
-  const decode = vi.fn(async (_body: EncodedImageFile, declared: ImageFile, operation: ImageOperationScope, _priority?: number) => {
-    const grant = operation.reserve("decoded", declared.width * declared.height * 4, "fixture pixels");
-    let closed = false;
-    const held = { image: { width: declared.width, height: declared.height } as ImageBitmap, close() { if (closed) return; closed = true; close(); grant.release(); } };
-    operation.adopt({ dispose: held.close }); return held;
-  });
+  const decode = vi.fn(async (body: EncodedImageFile, declared: ImageFile, operation: ImageOperationScope, priority = 0) =>
+    decodeImageFile({ file: body, declared, broker, scope: operation, priority,
+      decode: async () => ({ width: declared.width, height: declared.height, close } as ImageBitmap),
+    }));
   const panorama = createTiledPanorama({ representation: record, layout, broker, scope, priority: 7, createAtlas: () => createPanoramaTileAtlas({ device, layout, cells: 1, label: "fixture", reserveUpload }), obtain, decode, limits, wake });
   return { broker, scope, panorama, submitted, copies, wake, close, textures, obtain, decode };
 }
