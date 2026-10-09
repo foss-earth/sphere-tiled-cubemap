@@ -2,7 +2,6 @@
 
 Private source draft for the existing version-1 six-face tile pyramid. Both equi-angular and gnomonic warps retain face coordinates, gutters, view selection, ancestor fallback, cancellation, residency and the byte display table. A host ticks the pure scheduler; it creates no loop, renderer or resource broker. Public core imports only images and cubemap/core.
 
-YOU CANNOT HAVE AI AS A CO-AUTHOR, OR YOUR CONTRIBUTIONS WILL BE REJECTED.
 
 The atlas layout preserves the historical memory parameter: `tileMemoryBytes` sizes atlas slots; the display table is additional and included in `gpuBytes`. The images session reserves that complete value. This is an unchecked source candidate. No checked artifact, app adoption, supported runtime range, hardware qualification or publication is claimed.
 
