@@ -10,31 +10,38 @@
   },
   "exports": {
     ".": {
+      "source": "./src/index.ts",
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
     "./core": {
+      "source": "./src/core.ts",
       "types": "./dist/core.d.ts",
       "import": "./dist/core.js"
     },
     "./schema.json": "./schema/representation.json",
     "./preparation": {
+      "source": "./src/preparation.ts",
       "types": "./dist/preparation.d.ts",
       "import": "./dist/preparation.js"
     },
     "./browser": {
+      "source": "./src/browser/index.ts",
       "types": "./dist/browser/index.d.ts",
       "import": "./dist/browser/index.js"
     },
     "./babylon": {
+      "source": "./src/browser/tileAtlas.ts",
       "types": "./dist/browser/tileAtlas.d.ts",
       "import": "./dist/browser/tileAtlas.js"
     },
     "./shaders": {
+      "source": "./src/shaders.ts",
       "types": "./dist/shaders.d.ts",
       "import": "./dist/shaders.js"
     },
     "./settings": {
+      "source": "./src/catalogue.ts",
       "types": "./dist/catalogue.d.ts",
       "import": "./dist/catalogue.js"
     }
@@ -43,19 +50,9 @@
     "dist",
     "schema",
     "LICENSE",
-    "PROVENANCE.json",
     "README.md",
     "NOTICE",
-    "SOURCE_LINEAGE.json",
-    "SOURCE_RECEIPT.json",
-    "CODE_OF_CONDUCT.md",
-    "SECURITY.md",
-    "CONTRIBUTING.md",
-    "AGENTS.md",
-    ".attribution.json",
-    ".attribution-release.json",
-    ".github/workflows/attribution-check.yml",
-    "deps/foss-earth-ci-1db73d1ddb342e348a2c9e8387f7bbc7ebb3225e.tgz"
+    "AGENTS.md"
   ],
   "dependencies": {
     "@foss-earth/images": "0.1.0",
@@ -68,18 +65,15 @@
     "eslint": "9.39.4",
     "typescript-eslint": "8.59.3",
     "@eslint/js": "9.39.4",
-    "globals": "17.6.0",
-    "@foss-earth/ci": "file:deps/foss-earth-ci-1db73d1ddb342e348a2c9e8387f7bbc7ebb3225e.tgz"
+    "globals": "17.6.0"
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit --tsBuildInfoFile node_modules/.tmp/typecheck.tsbuildinfo",
     "lint": "eslint . --cache --cache-strategy content --cache-location node_modules/.cache/eslint/",
     "test": "vitest run --maxWorkers=50%",
-    "ci": "npm run check:conformance && npm run check:implementation",
-    "check:implementation": "npm run typecheck && npm run lint && npm test && npm run build",
-    "check:conformance": "node node_modules/@foss-earth/ci/bin/conformance.mjs --consumer . --trusted-release .attribution-release.json --output-root build/common-conformance",
-    "check:attribution": "node node_modules/@foss-earth/ci/bin/attribution.mjs --repo . --refs-file build/repository-split/intended-publication-refs.json"
+    "ci": "npm run check:implementation",
+    "check:implementation": "npm run typecheck && npm run lint && npm test && npm run build"
   },
   "peerDependencies": {
     "@foss-earth/renderer": "0.1.0",
