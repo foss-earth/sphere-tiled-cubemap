@@ -2,7 +2,7 @@
 
 The tiled six-face cubemap representation for FOSS Earth, a browser globe app built with TypeScript, React and Babylon.js. It covers the version-1 tile pyramid: equi-angular (EAC) and gnomonic face warps, face coordinates and gutters, view-based tile selection, ancestor fallback, cancellation, residency and the byte display table.
 
-The host ticks the scheduler on its own frame. The package creates no loop, renderer or resource broker. Its public core depends only on [images](https://github.com/foss-earth/images) and the core of [cubemap](https://github.com/foss-earth/cubemap).
+The host ticks the scheduler on its own frame. The package creates no loop, renderer or resource broker. Its public core depends only on [images](https://github.com/foss-earth/images) and the core of [sphere-cubemap](https://github.com/foss-earth/sphere-cubemap).
 
 ## Entry points
 
