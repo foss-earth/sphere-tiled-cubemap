@@ -1,9 +1,9 @@
 import type { ImageSamplingPlan, LinearImage, SourceSampler } from "@foss-earth/images";
-import { SOURCE_CUBE_FACES, type CubeFaceName } from "@foss-earth/cubemap/core";
+import { SOURCE_CUBE_FACES, type CubeFaceName } from "@foss-earth/sphere-cubemap/core";
 import type { CubeWarp } from "./cubeTiling.js";
 
 /**
- * Set by `@foss-earth/equirectangular`'s `cubePreparationPlan` on the sampler it
+ * Set by `@foss-earth/sphere-equirectangular`'s `cubePreparationPlan` on the sampler it
  * builds. The value is the pyramid level that sampler reads. A sampler without
  * this mark is read one direction at a time, as before.
  */

@@ -3,7 +3,7 @@ import { Constants, type BaseTexture } from "@babylonjs/core";
 import type { ImageRegionDevicePorts, UploadTicket } from "@foss-earth/renderer/babylon";
 import type { TileAtlasLayout } from "../layout.js";
 
-export interface PanoramaTileAtlas {
+export interface SphereTileAtlas {
   readonly layout: TileAtlasLayout;
   readonly atlas: BaseTexture;
   readonly table: BaseTexture;
@@ -15,10 +15,10 @@ export interface PanoramaTileAtlas {
   dispose(): void;
 }
 
-export function createPanoramaTileAtlas(options: {
+export function createSphereTileAtlas(options: {
   device: ImageRegionDevicePorts; layout: TileAtlasLayout; cells: number; label: string;
   reserveUpload(bytes: number, label: string): UploadTicket | null;
-}): PanoramaTileAtlas {
+}): SphereTileAtlas {
   const { device, layout, cells, label } = options;
   if (![layout.width, layout.height, layout.stored, layout.slots, layout.perRow, cells].every(value => Number.isSafeInteger(value) && value > 0)) throw new Error("Atlas layout dimensions must be positive integers.");
   const tableSize = 6 * cells * 2 * cells * 4;

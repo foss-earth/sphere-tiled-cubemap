@@ -12,7 +12,7 @@ const output = path.resolve(args.out ?? path.join(owner, "build", "installed-con
 assert.ok(output.startsWith(path.join(owner, "build") + path.sep), "Evidence must stay in this owner's build/");
 const workspace = path.join(output, "workspace"); mkdirSync(output, { recursive: true }); mkdirSync(workspace);
 const dependencies = {}, pins = {};
-for (const [key, name, version] of [["tiled", "@foss-earth/tiled-cubemap", "0.1.0"], ["images", "@foss-earth/images", "0.1.0"], ["cubemap", "@foss-earth/cubemap", "0.1.0"], ["renderer", "@foss-earth/renderer", "0.1.0"], ["ui", "@foss-earth/ui", "0.1.0"], ["babylon", "@babylonjs/core", "8.56.2"], ["jpeg", "jpeg-js", "0.4.4"], ["typescript", "typescript", "5.9.3"]]) {
+for (const [key, name, version] of [["tiled", "@foss-earth/sphere-tiled-cubemap", "0.1.0"], ["images", "@foss-earth/images", "0.1.0"], ["cubemap", "@foss-earth/sphere-cubemap", "0.1.0"], ["renderer", "@foss-earth/renderer", "0.1.0"], ["ui", "@foss-earth/ui", "0.1.0"], ["babylon", "@babylonjs/core", "8.56.2"], ["jpeg", "jpeg-js", "0.4.4"], ["typescript", "typescript", "5.9.3"]]) {
   assert.ok(args[key] && /^[a-f0-9]{64}$/.test(args[`${key}-sha256`] ?? ""), `Supply exact --${key} archive and --${key}-sha256`);
   const artifact = path.resolve(args[key]), bytes = readFileSync(artifact), sha256 = createHash("sha256").update(bytes).digest("hex");
   assert.equal(sha256, args[`${key}-sha256`]); pins[name] = { artifact, sha256, bytes: bytes.length, version }; dependencies[name] = `file:${artifact}`;
@@ -43,19 +43,19 @@ writeFileSync(path.join(output, "outside-negative-control.mjs"), "export const n
 writeFileSync(path.join(workspace, "pure.mjs"), `
 import assert from "node:assert/strict";
 for (const name of ["document", "window", "ImageBitmap", "fetch"]) Object.defineProperty(globalThis, name, { configurable: true, get() { throw new Error("Pure import read " + name); } });
-const root = await import("@foss-earth/tiled-cubemap"); const core = await import("@foss-earth/tiled-cubemap/core"); const prep = await import("@foss-earth/tiled-cubemap/preparation"); const shaders = await import("@foss-earth/tiled-cubemap/shaders");
+const root = await import("@foss-earth/sphere-tiled-cubemap"); const core = await import("@foss-earth/sphere-tiled-cubemap/core"); const prep = await import("@foss-earth/sphere-tiled-cubemap/preparation"); const shaders = await import("@foss-earth/sphere-tiled-cubemap/shaders");
 assert.equal(root.createCubeTiling, core.createCubeTiling); assert.equal(root.DEFAULT_TILE_CAPACITY_POLICY.viewSlotShare, .75);
 const tiling = root.createCubeTiling({ warp: "equi-angular", tileSize: 8, gutter: 1, maxLevel: 1 }); assert.equal(tiling.path(0), "px/0/0/0");
 const tile = prep.renderCubeTile({ samplesPerAxis: 1, footprintRadians: 0, source: { sample(_d, _f, out) { out.fill(.5); } } }, "py", 16, "gnomonic", 1, 8, 0, 0); assert.equal(tile.width, 10); assert.equal(tile.data[0], .5);
-assert.ok(shaders.TILE_LOOKUP_WGSL.includes("panoramaTiles")); assert.ok(shaders.TILE_LOOKUP_GLSL.includes("panoramaTiles"));
+assert.ok(shaders.TILE_LOOKUP_WGSL.includes("sphereTiles")); assert.ok(shaders.TILE_LOOKUP_GLSL.includes("sphereTiles"));
 await assert.rejects(import(${JSON.stringify(path.join(output, "outside-negative-control.mjs"))}), /OUTSIDE_ISOLATED_WORKSPACE/);
 console.log("Pure root/core/preparation/shaders with peer/DOM guards and negative control passed");
 `);
 writeFileSync(path.join(workspace, "public.mjs"), `
 import assert from "node:assert/strict"; import { readFileSync } from "node:fs"; import path from "node:path"; import { fileURLToPath } from "node:url";
-import { createTiledPanorama } from "@foss-earth/tiled-cubemap/browser"; import { createPanoramaTileAtlas } from "@foss-earth/tiled-cubemap/babylon";
-import { TILED_CUBEMAP_PARAMETERS } from "@foss-earth/tiled-cubemap/settings"; import { createSettingsRegistry } from "@foss-earth/ui/settings";
-import { createImageSessionBroker } from "@foss-earth/images"; import { tileAtlasLayout } from "@foss-earth/tiled-cubemap";
+import { createTiledSphere } from "@foss-earth/sphere-tiled-cubemap/browser"; import { createSphereTileAtlas } from "@foss-earth/sphere-tiled-cubemap/babylon";
+import { TILED_CUBEMAP_PARAMETERS } from "@foss-earth/sphere-tiled-cubemap/settings"; import { createSettingsRegistry } from "@foss-earth/ui/settings";
+import { createImageSessionBroker } from "@foss-earth/images"; import { tileAtlasLayout } from "@foss-earth/sphere-tiled-cubemap";
 import { createImageFileService } from "@foss-earth/images/browser"; import { encodePng } from "@foss-earth/images/node";
 import { createImageRegionDevicePorts, createTextureTransferTracker } from "@foss-earth/renderer/babylon";
 assert.equal(typeof createImageRegionDevicePorts, "function"); assert.equal(typeof createTextureTransferTracker, "function");
@@ -64,7 +64,7 @@ const broker = createImageSessionBroker({ requests: 2, decodes: 1, pools: { enco
 const imageBytes = encodePng({ width: 10, height: 10, rgb: new Uint8Array(10 * 10 * 3).fill(80) });
 const record = { id: "tiny", role: "immersion", projection: "tiled-cube", warp: "equi-angular", faceSize: 8, tileSize: 8, gutter: 1, mimeType: "image/png", encodedBytes: imageBytes.length, levelBytes: [imageBytes.length], url: "https://example.invalid/tiles/" }; const layout = tileAtlasLayout(record, 800, 128);
 const common = createImageFileService({ broker, priority: () => 1, limits: () => ({ responseBytes: 1000, timeoutMs: 1000 }), fetch: async () => new Response(imageBytes, { headers: { "content-type": "image/png" } }), decode: async () => ({ width: 10, height: 10, close() { closed += 1; } }) });
-const panorama = createTiledPanorama({ representation: record, layout, broker, scope, createAtlas: () => createPanoramaTileAtlas({ layout, cells: 1, label: "installed", device: { createTexture: () => ({ dispose() { disposed += 1; } }), copyImage(_t, _i, _x, _y, ticket) { tickets.push(ticket); }, copyBytes(_t, _b, ticket) { tickets.push(ticket); } }, reserveUpload(bytes, label) { const result = broker.pools.reserve("uploadOutstanding", bytes, label); return result.ok ? result.reservation : null; } }), obtain: common.obtain, decode: common.decode, limits: { requests: 2, waiting: 2, decodes: 1, uploadsPerFrame: 1, retries: 1, retryDelayMs: 100, fadeMs: 0 }, wake() {} });
+const panorama = createTiledSphere({ representation: record, layout, broker, scope, createAtlas: () => createSphereTileAtlas({ layout, cells: 1, label: "installed", device: { createTexture: () => ({ dispose() { disposed += 1; } }), copyImage(_t, _i, _x, _y, ticket) { tickets.push(ticket); }, copyBytes(_t, _b, ticket) { tickets.push(ticket); } }, reserveUpload(bytes, label) { const result = broker.pools.reserve("uploadOutstanding", bytes, label); return result.ok ? result.reservation : null; } }), obtain: common.obtain, decode: common.decode, limits: { requests: 2, waiting: 2, decodes: 1, uploadsPerFrame: 1, retries: 1, retryDelayMs: 100, fadeMs: 0 }, wake() {} });
 const view = { forward: [0, 1, 0], right: [1, 0, 0], up: [0, 0, 1], tanHalfHeight: .5, tanHalfWidth: .25, heightPx: 8 };
 for (let frame = 0; frame < 5; frame++) { panorama.tick(frame, view, { texelsPerPixel: 1, marginDeg: 0, levelCap: 0 }); await new Promise(resolve => setImmediate(resolve)); }
 assert.equal(panorama.stats().complete, true); assert.equal(closed, 1); panorama.dispose(); assert.equal(disposed, 2); assert.ok(broker.pools.stats().uploadOutstanding.reserved > 0); for (const ticket of tickets) ticket.release(); broker.dispose(); assert.deepEqual(broker.pools.live(), []);
@@ -77,8 +77,8 @@ for (const throwingCopy of [false, true]) {
   const nativeCommon = createImageFileService({ broker: nativeBroker, priority: () => 1, limits: () => ({ responseBytes: 1000, timeoutMs: 1000 }),
     fetch: async () => new Response(imageBytes, { headers: { "content-type": "image/png" } }),
     decode: async () => ({ width: 10, height: 10, close() { nativeClosed += 1; } }) });
-  const nativePanorama = createTiledPanorama({ representation: record, layout, broker: nativeBroker, scope: nativeScope,
-    createAtlas: () => createPanoramaTileAtlas({ layout, cells: 1, label: "installed native cancellation", device: {
+  const nativeSphere = createTiledSphere({ representation: record, layout, broker: nativeBroker, scope: nativeScope,
+    createAtlas: () => createSphereTileAtlas({ layout, cells: 1, label: "installed native cancellation", device: {
       createTexture: () => ({ dispose() { nativeDisposed += 1; } }),
       copyImage(_texture, image, _x, _y, ticket) {
         nativeTickets.push(ticket); nativeCopies += 1;
@@ -92,16 +92,16 @@ for (const throwingCopy of [false, true]) {
     }, reserveUpload(bytes, label) { const result = nativeBroker.pools.reserve("uploadOutstanding", bytes, label); return result.ok ? result.reservation : null; } }),
     obtain: nativeCommon.obtain, decode: nativeCommon.decode,
     limits: { requests: 2, waiting: 2, decodes: 1, uploadsPerFrame: 1, retries: 1, retryDelayMs: 100, fadeMs: 0 }, wake() {} });
-  for (let frame = 0; frame < 5; frame++) { nativePanorama.tick(frame, view, { texelsPerPixel: 1, marginDeg: 0, levelCap: 0 }); await new Promise(resolve => setImmediate(resolve)); }
+  for (let frame = 0; frame < 5; frame++) { nativeSphere.tick(frame, view, { texelsPerPixel: 1, marginDeg: 0, levelCap: 0 }); await new Promise(resolve => setImmediate(resolve)); }
   assert.deepEqual(observed, [false, false]); assert.equal(nativeCopies, 1); assert.equal(nativeClosed, 1);
   assert.equal(nativeBroker.pools.stats().decoded.reserved, 0); assert.equal(nativeDisposed, 2);
-  nativePanorama.dispose(); nativePanorama.dispose(); assert.equal(nativeClosed, 1); assert.equal(nativeDisposed, 2);
+  nativeSphere.dispose(); nativeSphere.dispose(); assert.equal(nativeClosed, 1); assert.equal(nativeDisposed, 2);
   assert.ok(nativeBroker.pools.stats().uploadOutstanding.reserved > 0);
   for (const ticket of nativeTickets) { ticket.release(); ticket.release(); }
   nativeBroker.dispose(); assert.deepEqual(nativeBroker.pools.live(), []);
 }
 console.log("Actual common decoded inputs survive synchronous native cancellation and throwing copies; submitted grants remain renderer-owned.");
-const owner = path.dirname(path.dirname(fileURLToPath(import.meta.resolve("@foss-earth/tiled-cubemap")))); const manifest = JSON.parse(readFileSync(path.join(owner, "package.json"), "utf8")); for (const value of Object.values(manifest.exports)) if (typeof value === "object") assert.ok(readFileSync(path.join(owner, value.types)).length); assert.equal(JSON.parse(readFileSync(path.join(owner, manifest.exports["./schema.json"]), "utf8")).type, "object"); console.log("Installed public adapters/settings/schema and common lifetime mock passed");
+const owner = path.dirname(path.dirname(fileURLToPath(import.meta.resolve("@foss-earth/sphere-tiled-cubemap")))); const manifest = JSON.parse(readFileSync(path.join(owner, "package.json"), "utf8")); for (const value of Object.values(manifest.exports)) if (typeof value === "object") assert.ok(readFileSync(path.join(owner, value.types)).length); assert.equal(JSON.parse(readFileSync(path.join(owner, manifest.exports["./schema.json"]), "utf8")).type, "object"); console.log("Installed public adapters/settings/schema and common lifetime mock passed");
 `);
 run(process.execPath, ["--import", path.join(workspace, "guard.mjs"), path.join(workspace, "pure.mjs")], "pure-runtime.log", { TILED_PURE: "1" });
 run(process.execPath, ["--import", path.join(workspace, "guard.mjs"), path.join(workspace, "public.mjs")], "public-runtime.log");

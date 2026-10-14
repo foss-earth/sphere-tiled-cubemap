@@ -3,8 +3,8 @@ import { createImageSessionBroker, type ImageFile, type ImageOperationScope, typ
 import { decodeImageFile, type EncodedImageFile } from "@foss-earth/images/browser";
 import type { BaseTexture } from "@babylonjs/core";
 import type { ImageRegionDevicePorts, UploadTicket } from "@foss-earth/renderer/babylon";
-import { createTiledPanorama } from "../src/browser/index.js";
-import { createPanoramaTileAtlas } from "../src/browser/tileAtlas.js";
+import { createTiledSphere } from "../src/browser/index.js";
+import { createSphereTileAtlas } from "../src/browser/tileAtlas.js";
 import { tileAtlasLayout } from "../src/layout.js";
 import type { TiledCubeRepresentationRecord } from "../src/representation.js";
 
@@ -43,48 +43,48 @@ function fixture(shared?: ImageSessionBroker) {
     decodeImageFile({ file: body, declared, broker, scope: operation, priority,
       decode: async () => ({ width: declared.width, height: declared.height, close } as ImageBitmap),
     }));
-  const panorama = createTiledPanorama({ representation: record, layout, broker, scope, priority: 7, createAtlas: () => createPanoramaTileAtlas({ device, layout, cells: 1, label: "fixture", reserveUpload }), obtain, decode, limits, wake });
-  return { broker, scope, panorama, submitted, copies, wake, close, textures, obtain, decode };
+  const sphere = createTiledSphere({ representation: record, layout, broker, scope, priority: 7, createAtlas: () => createSphereTileAtlas({ device, layout, cells: 1, label: "fixture", reserveUpload }), obtain, decode, limits, wake });
+  return { broker, scope, sphere, submitted, copies, wake, close, textures, obtain, decode };
 }
 
 describe("one common session and renderer-owned submitted lifetime", () => {
-  it("keeps two panorama jobs isolated while one tracker completion admits the other", async () => {
+  it("keeps two sphere jobs isolated while one tracker completion admits the other", async () => {
     const a = fixture(), b = fixture(a.broker);
-    for (const f of [a, b]) f.panorama.tick(0, view, selection);
-    await flush(); for (const f of [a, b]) f.panorama.tick(1, view, selection); await flush();
+    for (const f of [a, b]) f.sphere.tick(0, view, selection);
+    await flush(); for (const f of [a, b]) f.sphere.tick(1, view, selection); await flush();
     // Initial tables hold both grants. Complete them before the tile frame.
     for (const f of [a, b]) for (const ticket of f.submitted) ticket.release(); await flush();
-    a.panorama.tick(2, view, selection);
-    expect(a.panorama.stats().complete).toBe(true);
-    expect(b.panorama.tick(2, view, selection)).toBe(false);
-    expect(b.panorama.stats().complete).toBe(false); expect(b.close).not.toHaveBeenCalled();
-    a.panorama.dispose();
+    a.sphere.tick(2, view, selection);
+    expect(a.sphere.stats().complete).toBe(true);
+    expect(b.sphere.tick(2, view, selection)).toBe(false);
+    expect(b.sphere.stats().complete).toBe(false); expect(b.close).not.toHaveBeenCalled();
+    a.sphere.dispose();
     // Cancelling A cannot release its submitted GPU charge or B's decoded work.
     expect(a.broker.pools.stats().uploadOutstanding.reserved).toBe(448);
     const before = b.wake.mock.calls.length;
     for (const ticket of a.submitted) ticket.release(); await flush();
     expect(b.wake).toHaveBeenCalledTimes(before + 1);
-    b.panorama.tick(2, view, selection); expect(b.panorama.stats().complete).toBe(true);
-    b.panorama.dispose(); for (const ticket of b.submitted) ticket.release(); a.broker.dispose();
+    b.sphere.tick(2, view, selection); expect(b.sphere.stats().complete).toBe(true);
+    b.sphere.dispose(); for (const ticket of b.submitted) ticket.release(); a.broker.dispose();
     expect(a.broker.pools.live()).toEqual([]);
   });
   it("waits without polling and wakes only after the full next update fits", async () => {
     const f = fixture(); const blocked = f.broker.pools.reserve("uploadOutstanding", 448, "other job");
     if (!blocked.ok) throw new Error("fixture admission");
-    expect(f.panorama.tick(0, view, selection)).toBe(false); await flush();
-    f.panorama.tick(1, view, selection); await flush();
-    expect(f.panorama.tick(2, view, selection)).toBe(false);
+    expect(f.sphere.tick(0, view, selection)).toBe(false); await flush();
+    f.sphere.tick(1, view, selection); await flush();
+    expect(f.sphere.tick(2, view, selection)).toBe(false);
     expect(f.copies).toEqual([]); expect(f.broker.pools.stats().decoded.reserved).toBe(400);
     const before = f.wake.mock.calls.length;
     blocked.reservation.resize(400); await flush();
     expect(f.wake).toHaveBeenCalledTimes(before); // table alone fits, tile plus table does not
     blocked.reservation.release(); await flush();
     expect(f.wake).toHaveBeenCalledTimes(before + 1);
-    f.panorama.tick(2, view, selection);
+    f.sphere.tick(2, view, selection);
     expect(f.copies).toEqual(["tile", "table"]); expect(f.close).toHaveBeenCalledOnce();
-    expect(f.panorama.stats().complete).toBe(true);
+    expect(f.sphere.stats().complete).toBe(true);
     expect(f.obtain.mock.calls[0][4]).toBe(7); expect(f.decode.mock.calls[0][3]).toBe(7);
-    f.panorama.dispose(); f.panorama.dispose();
+    f.sphere.dispose(); f.sphere.dispose();
     expect(f.broker.pools.stats().uploadOutstanding.reserved).toBe(448);
     const retiredWakes = f.wake.mock.calls.length;
     for (const grant of f.submitted) grant.release(); await flush();
@@ -97,13 +97,13 @@ describe("one common session and renderer-owned submitted lifetime", () => {
     // A table fits but a tile cannot. No continuous frame or release feedback loop.
     const blocked = f.broker.pools.reserve("uploadOutstanding", 400, "other upload");
     if (!blocked.ok) throw new Error("fixture admission");
-    f.panorama.tick(0, view, selection); await flush(); f.panorama.tick(1, view, selection); await flush();
+    f.sphere.tick(0, view, selection); await flush(); f.sphere.tick(1, view, selection); await flush();
     // Complete the initial preview-only table so a new preflight can fit.
     for (const ticket of f.submitted) ticket.release(); await flush();
     const before = f.wake.mock.calls.length;
-    expect(f.panorama.tick(2, view, selection)).toBe(false); await flush();
+    expect(f.sphere.tick(2, view, selection)).toBe(false); await flush();
     expect(f.wake).toHaveBeenCalledTimes(before);
-    f.panorama.dispose(); blocked.reservation.release(); for (const ticket of f.submitted) ticket.release(); await flush(); f.broker.dispose();
+    f.sphere.dispose(); blocked.reservation.release(); for (const ticket of f.submitted) ticket.release(); await flush(); f.broker.dispose();
     expect(f.broker.pools.live()).toEqual([]);
   });
 });

@@ -3,7 +3,7 @@ import { MIB } from '@foss-earth/images';
 import type { DerivedDefault, DeviceContext, ParameterSpec, ParameterUnit } from '@foss-earth/ui/settings';
 import { tileAtlasLayout } from './layout.js';
 const SCENES_TAB = 'scenes';
-const PANORAMA_SETTINGS_TAB = 'panorama-settings';
+const SPHERE_SETTINGS_TAB = 'panorama-settings';
 const LOADER = 'src/scenes/loadScene.ts';
 const RESOURCES = 'src/scenes/panoramaResources.ts';
 const RENDERER = 'src/engine/babylon/panorama/panoramaRenderer.ts';
@@ -57,12 +57,12 @@ const tilesMiB = (count: number): number => Math.ceil((count * TILE_BYTES) / MIB
 const PREPARED_CUBE = { tileSize: 192, gutter: 1, faceSize: 1536 };
 /** GPU MiB of the atlas a tile memory lays out for a prepared cube, up to the next quarter MiB: a square of slots, some empty, and the display table. */
 const atlasMiB = (tileMemoryMiB: number): number => Math.ceil(((tileAtlasLayout(PREPARED_CUBE, tileMemoryMiB * MIB)?.gpuBytes ?? 0) / MIB) * 4) / 4;
-/** The share of the device's memory a panorama's tiles may take: the map's imagery takes the same for its own GPU budget. */
+/** The share of the device's memory a sphere's tiles may take: the map's imagery takes the same for its own GPU budget. */
 const DEVICE_MEMORY_SHARE = 32;
 
 /**
  * The tile memory's default, from what the browser says of the device: every
- * tile of a panorama where 1/32 of its memory holds them, else that share,
+ * tile of a sphere where 1/32 of its memory holds them, else that share,
  * and never less than a phone's view and its margin. A browser that does not
  * say has room, unless it is a touch screen's, most often a phone's.
  */
@@ -85,7 +85,7 @@ export function tileMemoryDefault(context: DeviceContext): DerivedDefault<number
     : { value: all, derivedFrom: "every tile of a panorama, because this browser does not say how much memory the device has and it has no touch screen" };
 }
 
-/** What stays on the GPU of panoramas not on screen: the atlas of the one left, where the tile memory holds every tile, else nothing. */
+/** What stays on the GPU of spheres not on screen: the atlas of the one left, where the tile memory holds every tile, else nothing. */
 export function keptGpuDefault(context: DeviceContext): DerivedDefault<number> {
   const tiles = tileMemoryDefault(context);
   return tiles.value >= tilesMiB(TILES_OF_A_CUBE)
@@ -150,6 +150,6 @@ quantity({
     id: "scene.panorama.tileOutlines", label: "Tile outlines",
     description: "Draws each tile's edges and tints it by its level, from the coarsest: orange, yellow, green and blue; red where the preview shows because no tile has arrived.",
     unit: "none", kind: "boolean", default: false, defaultReason: "Off shows the photograph; on shows how it loads.",
-    home: { tab: PANORAMA_SETTINGS_TAB, section: "image", level: "main" }, appliesLive: true, source: RENDERER,
+    home: { tab: SPHERE_SETTINGS_TAB, section: "image", level: "main" }, appliesLive: true, source: RENDERER,
   }
 ];

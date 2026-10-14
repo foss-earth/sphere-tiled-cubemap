@@ -7,7 +7,7 @@ import type { TileView, TileSelectionParameters } from "../tileSelection.js";
 import type { TileAtlasLayout } from "../layout.js";
 import type { TiledCubeRepresentationRecord } from "../representation.js";
 
-export interface TiledPanoramaAtlas<Image = ImageBitmap> {
+export interface TiledSphereAtlas<Image = ImageBitmap> {
   /** Capture input synchronously before returning, including a throwing partial copy.
    * Deferred adapters must own a separate input hold; retaining the upload charge alone is insufficient.
    */
@@ -21,7 +21,7 @@ export interface TiledPanoramaAtlas<Image = ImageBitmap> {
   pump?(): void;
   dispose(): void;
 }
-export interface TiledPanorama {
+export interface TiledSphere {
   readonly representation: TiledCubeRepresentationRecord;
   readonly tiling: CubeTiling;
   readonly layout: TileAtlasLayout;
@@ -31,14 +31,14 @@ export interface TiledPanorama {
   settleReplacement(): void;
   dispose(): void;
 }
-export interface TiledPanoramaOptions {
+export interface TiledSphereOptions {
   representation: TiledCubeRepresentationRecord;
   layout: TileAtlasLayout;
   broker: ImageSessionBroker;
   /** Dedicated operation owns atlas residency and requests, not submitted upload tickets. */
   scope: ImageOperationScope;
   overlap?: boolean;
-  createAtlas(layout: TileAtlasLayout, cells: number): TiledPanoramaAtlas;
+  createAtlas(layout: TileAtlasLayout, cells: number): TiledSphereAtlas;
   /** Cache/header/transport policy lives in images; scope identifies this tile. */
   obtain(file: ImageFile, declaredBytes: number, scope: ImageOperationScope, onChunk: (bytes: number) => void, priority?: number): Promise<EncodedImageFile & { fromCache?: boolean }>;
   decode(file: EncodedImageFile, declared: ImageFile, scope: ImageOperationScope, priority?: number): Promise<HeldDecodedImage>;
@@ -47,12 +47,12 @@ export interface TiledPanoramaOptions {
   limits: TileSchedulerLimits;
   wake(): void;
 }
-export function createTiledPanorama(options: TiledPanoramaOptions): TiledPanorama {
+export function createTiledSphere(options: TiledSphereOptions): TiledSphere {
   const { representation, layout, scope, broker } = options;
   scope.signal.throwIfAborted();
   const tiling = createCubeTiling({ warp: representation.warp, tileSize: representation.tileSize, maxLevel: representation.levelBytes.length - 1, gutter: representation.gutter });
   const gpu = scope.reserve("sourceGpu", layout.gpuBytes, `${representation.id} atlas/table`, { overlap: options.overlap });
-  let atlas: TiledPanoramaAtlas;
+  let atlas: TiledSphereAtlas;
   try { atlas = options.createAtlas(layout, representation.faceSize / representation.tileSize); }
   catch (error) { scope.dispose(); throw error; }
   if (!scope.adopt(atlas)) { scope.signal.throwIfAborted(); throw new Error("Stale tiled atlas."); }

@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import type { BaseTexture } from "@babylonjs/core";
 import type { ImageRegionDevicePorts, UploadTicket } from "@foss-earth/renderer/babylon";
-import { createPanoramaTileAtlas } from "./tileAtlas.js";
+import { createSphereTileAtlas } from "./tileAtlas.js";
 
 function harness() {
   let tableAdmitted = true; let tileAdmitted = true;
@@ -19,19 +19,19 @@ function harness() {
     const release = vi.fn(); releases.push(release); return { release };
   });
   const layout = { width: 4, height: 4, stored: 2, slots: 4, perRow: 2, gpuBytes: 112 };
-  const atlas = createPanoramaTileAtlas({ device, layout, cells: 1, label: "fixture", reserveUpload });
+  const atlas = createSphereTileAtlas({ device, layout, cells: 1, label: "fixture", reserveUpload });
   return { atlas, device, submitted, releases, textures, reserveUpload, tableAdmission(value: boolean) { tableAdmitted = value; }, tileAdmission(value: boolean) { tileAdmitted = value; } };
 }
 describe("tiled atlas atomic upload admission", () => {
   it("disposes a partial allocation when the shared device refuses the second texture", () => {
     const first = { dispose: vi.fn() } as unknown as BaseTexture;
     const device: ImageRegionDevicePorts = { createTexture: vi.fn().mockReturnValueOnce(first).mockImplementationOnce(() => { throw new Error("table allocation"); }), copyImage: vi.fn(), copyBytes: vi.fn() };
-    expect(() => createPanoramaTileAtlas({ device, layout: { width: 4, height: 4, stored: 2, slots: 4, perRow: 2, gpuBytes: 112 }, cells: 1, label: "partial", reserveUpload: () => null })).toThrow("table allocation");
+    expect(() => createSphereTileAtlas({ device, layout: { width: 4, height: 4, stored: 2, slots: 4, perRow: 2, gpuBytes: 112 }, cells: 1, label: "partial", reserveUpload: () => null })).toThrow("table allocation");
     expect(first.dispose).toHaveBeenCalledOnce();
   });
   it("validates byte cost and slot dimensions before any native allocation", () => {
     const device: ImageRegionDevicePorts = { createTexture: vi.fn(), copyImage: vi.fn(), copyBytes: vi.fn() };
-    expect(() => createPanoramaTileAtlas({ device, layout: { width: 4, height: 4, stored: 2, slots: 5, perRow: 2, gpuBytes: 112 }, cells: 1, label: "bad", reserveUpload: () => null })).toThrow("inconsistent");
+    expect(() => createSphereTileAtlas({ device, layout: { width: 4, height: 4, stored: 2, slots: 5, perRow: 2, gpuBytes: 112 }, cells: 1, label: "bad", reserveUpload: () => null })).toThrow("inconsistent");
     expect(device.createTexture).not.toHaveBeenCalled();
   });
   it("leaves a partially submitted throwing tile grant with the device, freeing only unused table admission", () => {

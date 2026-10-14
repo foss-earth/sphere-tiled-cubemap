@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { describe, expect, it } from "vitest";
 import type { ImageSamplingPlan, LinearImage, SourceSampler } from "@foss-earth/images";
-import { CUBE_FACE_NAMES } from "@foss-earth/cubemap/core";
+import { CUBE_FACE_NAMES } from "@foss-earth/sphere-cubemap/core";
 import type { CubeWarp } from "./cubeTiling.js";
 import { renderCubeTile, renderTileFace } from "./preparation.js";
 

@@ -4,7 +4,7 @@ import { tileAtlasLayout } from "../layout.js";
 import type { TiledCubeRepresentationRecord as ResolvedTiledCube } from "../representation.js";
 import { createMediaStore, mediaGroup, type SavedFiles } from "@foss-earth/images";
 import { memoryBackend } from "../test/memoryMediaBackend.js";
-import { createTiledPanorama } from "./index.js";
+import { createTiledSphere } from "./index.js";
 import { createImageSessionBroker } from "@foss-earth/images";
 import { createImageFileService } from "@foss-earth/images/browser";
 import type { TileSchedulerLimits } from "../tileScheduler.js";
@@ -48,7 +48,7 @@ function harness(respond: (url: string) => Response, saved: (SavedFiles & { sett
     },
     cache: saved ? { files: saved, settled: () => saved.settled() } : null,
   });
-  const panorama = createTiledPanorama({ representation, layout, broker, scope,
+  const sphere = createTiledSphere({ representation, layout, broker, scope,
     createAtlas: () => ({ uploadTile(slot, image) {
       uploads.push(slot);
       onUpload?.({ cancel: () => scope.dispose(), closed: () => closed.has(image) });
@@ -58,20 +58,20 @@ function harness(respond: (url: string) => Response, saved: (SavedFiles & { sett
   });
   let now = 0;
   return {
-    panorama, uploads, requested,
+    sphere, uploads, requested,
     get decoded() { return decoded; },
     get released() { return released; },
     async run(frames: number, stepMs = 16) {
       for (let frame = 0; frame < frames; frame++) {
         now += stepMs;
-        panorama.tick(now, ahead, { texelsPerPixel: 1, marginDeg: 0, levelCap: 1 });
+        sphere.tick(now, ahead, { texelsPerPixel: 1, marginDeg: 0, levelCap: 1 });
         await new Promise(resolve => setTimeout(resolve, 0));
       }
     },
   };
 }
 
-describe("a tiled panorama", () => {
+describe("a tiled sphere", () => {
   it("keeps actual common decoded pixels alive through reentrant cancellation during a synchronous native copy", async () => {
     const observed: boolean[] = [];
     const h = harness(() => new Response(jpeg(194) as BodyInit), null, () => true, input => {
@@ -83,7 +83,7 @@ describe("a tiled panorama", () => {
     expect(observed).toEqual([false, false]);
     expect(h.uploads).toHaveLength(1);
     expect(h.released).toBe(h.decoded);
-    h.panorama.dispose();
+    h.sphere.dispose();
     expect(h.released).toBe(h.decoded);
   });
 
@@ -97,7 +97,7 @@ describe("a tiled panorama", () => {
     await h.run(20);
     expect(observed).toEqual([false]);
     expect(h.released).toBe(h.decoded);
-    h.panorama.dispose();
+    h.sphere.dispose();
     expect(h.released).toBe(h.decoded);
   });
 
@@ -105,8 +105,8 @@ describe("a tiled panorama", () => {
     const h = harness(() => new Response(jpeg(194) as BodyInit));
     await h.run(20);
     expect(h.requested.every(url => /^https:\/\/tiles\.example\/eac-tiles\/(px|nx|py|ny|pz|nz)\/1\/[01]\/[01]\.jpg$/.test(url))).toBe(true);
-    expect(h.panorama.stats().complete).toBe(true);
-    expect(h.uploads.length).toBe(h.panorama.stats().resident);
+    expect(h.sphere.stats().complete).toBe(true);
+    expect(h.uploads.length).toBe(h.sphere.stats().resident);
     expect(h.released).toBe(h.decoded);
   });
 
@@ -115,13 +115,13 @@ describe("a tiled panorama", () => {
     await wrong.run(10);
     expect(wrong.decoded).toBe(0);
     expect(wrong.uploads).toEqual([]);
-    expect(wrong.panorama.stats().failures).toBeGreaterThan(0);
+    expect(wrong.sphere.stats().failures).toBeGreaterThan(0);
 
     const large = harness(() => new Response(jpeg(194, 8192) as BodyInit));
     await large.run(10);
     expect(large.decoded).toBe(0);
-    expect(large.panorama.stats().failures).toBeGreaterThan(0);
-    expect(large.panorama.stats().shownInView).toBe(0);
+    expect(large.sphere.stats().failures).toBeGreaterThan(0);
+    expect(large.sphere.stats().shownInView).toBe(0);
   });
 
   it("counts a failed response as a failure and asks again later, not every frame", async () => {
@@ -129,17 +129,17 @@ describe("a tiled panorama", () => {
     const h = harness(() => (failing ? new Response("", { status: 503 }) : new Response(jpeg(194) as BodyInit)));
     await h.run(10);
     const first = h.requested.length;
-    expect(h.panorama.stats().failures).toBe(first);
+    expect(h.sphere.stats().failures).toBe(first);
     await h.run(10);
     expect(h.requested.length).toBe(first);
     failing = false;
     // The first retry, after twice the delay.
     await h.run(40, 16);
-    expect(h.panorama.stats().complete).toBe(true);
+    expect(h.sphere.stats().complete).toBe(true);
   });
 });
 
-describe("a tiled panorama with saved images", () => {
+describe("a tiled sphere with saved images", () => {
   const group = mediaGroup({ id: "northrop-mall", revision: "ac69" }, representation);
 
   it("keeps the tiles it downloads, and a later visit shows them without asking the network", async () => {
@@ -148,7 +148,7 @@ describe("a tiled panorama with saved images", () => {
     const first = harness(() => new Response(jpeg(194) as BodyInit, { headers: { "content-type": "image/jpeg" } }), Object.assign(media.files(group), { settled: () => media.settled() }));
     await first.run(20);
     await media.settled();
-    expect(first.panorama.stats()).toMatchObject({ complete: true, reusedTiles: 0 });
+    expect(first.sphere.stats()).toMatchObject({ complete: true, reusedTiles: 0 });
     const kept = await media.inspect();
     expect(kept.files).toBe(first.requested.length);
     expect(kept.bytes).toBe(100 * first.requested.length);
@@ -157,7 +157,7 @@ describe("a tiled panorama with saved images", () => {
     const second = harness(() => new Response("", { status: 503 }), Object.assign(later.files(group), { settled: () => later.settled() }));
     await second.run(20);
     expect(second.requested).toEqual([]);
-    expect(second.panorama.stats()).toMatchObject({ complete: true, reusedTiles: first.requested.length, reusedBytes: 100 * first.requested.length, receivedBytes: 0, failures: 0 });
+    expect(second.sphere.stats()).toMatchObject({ complete: true, reusedTiles: first.requested.length, reusedBytes: 100 * first.requested.length, receivedBytes: 0, failures: 0 });
   });
 
   it("does not keep a tile of the wrong size, and forgets a kept one", async () => {
@@ -175,7 +175,7 @@ describe("a tiled panorama with saved images", () => {
     const h = harness(() => new Response(jpeg(194) as BodyInit), Object.assign(media.files(group), { settled: () => media.settled() }));
     await h.run(60);
     await media.settled();
-    expect(h.panorama.stats().complete).toBe(true);
+    expect(h.sphere.stats().complete).toBe(true);
     expect(h.requested).toContain(url);
     expect([...(await media.get(group, url))!.bytes.subarray(7, 9)]).toEqual([0, 194]);
   });
@@ -191,7 +191,7 @@ describe("a tiled panorama with saved images", () => {
     const h = harness(() => new Response(jpeg(194) as BodyInit), Object.assign(media.files(group), { settled: () => media.settled() }), bytes => bytes[50] !== 0xee);
     await h.run(60);
     await media.settled();
-    expect(h.panorama.stats().complete).toBe(true);
+    expect(h.sphere.stats().complete).toBe(true);
     expect(h.requested).toContain(url);
     expect((await media.get(group, url))!.bytes[50]).toBe(0);
   });

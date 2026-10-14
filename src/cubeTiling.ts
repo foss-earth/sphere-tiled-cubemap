@@ -14,7 +14,7 @@
  * face's own coordinates continued past its edge. Ids run level by level,
  * then face, row and column.
  */
-import { CUBE_FACE_NAMES, SOURCE_CUBE_FACES } from "@foss-earth/cubemap/core";
+import { CUBE_FACE_NAMES, SOURCE_CUBE_FACES } from "@foss-earth/sphere-cubemap/core";
 import type { Vec3 } from "@foss-earth/images";
 
 export type CubeWarp = "equi-angular" | "gnomonic";

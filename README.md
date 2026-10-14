@@ -1,4 +1,4 @@
-# @foss-earth/tiled-cubemap
+# @foss-earth/sphere-tiled-cubemap
 
 The tiled six-face cubemap representation for FOSS Earth, a browser globe app built with TypeScript, React and Babylon.js. It covers the version-1 tile pyramid: equi-angular (EAC) and gnomonic face warps, face coordinates and gutters, view-based tile selection, ancestor fallback, cancellation, residency and the byte display table.
 
@@ -8,11 +8,11 @@ The host ticks the scheduler on its own frame. The package creates no loop, rend
 
 | Entry | What it provides |
 | --- | --- |
-| `@foss-earth/tiled-cubemap` and `/core` | `createCubeTiling`, spherical regions, `createTileSelector`, `createTileScheduler`, `DEFAULT_TILE_CAPACITY_POLICY`, layout and count contracts. The root entry also exports the tiled record validator, `tiledCubeFiles`, `tiledCubeFilesWithLevel`, `estimateTiledCube` and `createTiledCubeRepresentation`. |
+| `@foss-earth/sphere-tiled-cubemap` and `/core` | `createCubeTiling`, spherical regions, `createTileSelector`, `createTileScheduler`, `DEFAULT_TILE_CAPACITY_POLICY`, layout and count contracts. The root entry also exports the tiled record validator, `tiledCubeFiles`, `tiledCubeFilesWithLevel`, `estimateTiledCube` and `createTiledCubeRepresentation`. |
 | `/schema.json` | JSON schema for the version-1, immersion-only record: gutter, byte totals and directory rules. |
 | `/preparation` | `renderTileFace` and `renderCubeTile`. |
-| `/browser` | `createTiledPanorama`. |
-| `/babylon` | `createPanoramaTileAtlas`. |
+| `/browser` | `createTiledSphere`. |
+| `/babylon` | `createSphereTileAtlas`. |
 | `/shaders` | Tile-table, gutter, ancestor and preview sampling fragments. |
 | `/settings` | `TILED_CUBEMAP_PARAMETERS`, `tileMemoryDefault`, `keptGpuDefault`. |
 
@@ -26,7 +26,7 @@ Tile files are laid out as `<face>/<level>/<x>/<y>.<jpg|png>`, with level groups
 
 `renderTileFace` and `renderCubeTile` take one reusable, format-neutral source sampler, an angular footprint and samples per axis. EAC and gnomonic paths keep the full-face sample phase, including exterior and shared gutters, so a tile is exactly its crop of the full face. This package does not decode or normalize the source image. `/shaders` provides the sampling fragments; shader assembly and device compilation stay with the viewer and renderer.
 
-## Browser: `createTiledPanorama`
+## Browser: `createTiledSphere`
 
 Supply:
 
@@ -40,7 +40,7 @@ Transport order is view-first, largest visible share first, then margin. The hos
 
 The adapter retains the common decoded pixels before a synchronous tile copy. If the scope is disposed during that callback, the input isn't closed until the callback returns or throws. The supplied `uploadTile` and `setTable` ports must capture their image or table inputs synchronously, because the table array can be mutated by the next scheduler update. A deferred port must retain its input or reserve an owned snapshot before starting native work. An upload-byte ticket alone owns no pixels. Decoders without the common `retain` capability can't be used here.
 
-## Babylon: `createPanoramaTileAtlas`
+## Babylon: `createSphereTileAtlas`
 
 A thin adapter over the renderer's `ImageRegionDevicePorts`. Allocation, GL state, GPU copy completion and device loss belong to the renderer.
 
@@ -54,7 +54,7 @@ The scheduler keeps table updates pending through refusals and pins the union of
 
 ## Settings
 
-`TILED_CUBEMAP_PARAMETERS`, `tileMemoryDefault` and `keptGpuDefault` use only a type-level dependency on the UI settings contract and register nothing. The host passes `keptGpuDefault` to images' `createImageResourceParameters`. Tile outlines are under Panorama settings, Image. The other tile controls are under Scenes, Tiles. Two scheduler constants are exposed as controls at Scenes, Tiles, All:
+`TILED_CUBEMAP_PARAMETERS`, `tileMemoryDefault` and `keptGpuDefault` use only a type-level dependency on the UI settings contract and register nothing. The host passes `keptGpuDefault` to images' `createImageResourceParameters`. Tile outlines are under Sphere settings, Image. The other tile controls are under Scenes, Tiles. Two scheduler constants are exposed as controls at Scenes, Tiles, All:
 
 | Setting | Unit and bounds | Default | Scheduler port |
 | --- | --- | --- | --- |
@@ -63,9 +63,16 @@ The scheduler keeps table updates pending through refusals and pins the union of
 
 Omitting the ports gives three-quarter selection capacity and eight-doubling backoff. A lower share can pick a coarser level to fit the view. Once retries are exhausted, the wait is `retryDelayMs * 2 ** retryBackoffDoublings`; the first retry doubles the base delay.
 
+## Earlier package name
+
+This package was named `@foss-earth/tiled-cubemap`. Nothing is published under that name
+any more: consumers import `@foss-earth/sphere-tiled-cubemap`. Records and documents did
+not change: the `tiled-cube` projection, the schema `$id` and media URLs are as before. The
+repository keeps the name `tiled-cubemap` until it is renamed on the host.
+
 ## Development
 
-This package's own `npm install`, tests and build don't work on their own yet, because it names `@foss-earth/images` and `@foss-earth/cubemap` by versions that aren't published. Libraries are normally developed through the app, which uses them straight from their checkouts. See [local source](https://github.com/foss-earth/app#local-source).
+This package's own `npm install`, tests and build don't work on their own yet, because it names `@foss-earth/images` and `@foss-earth/sphere-cubemap` by versions that aren't published. Libraries are normally developed through the app, which uses them straight from their checkouts. See [local source](https://github.com/foss-earth/app#local-source).
 
 ## License
 

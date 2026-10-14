@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { SOURCE_CUBE_FACES, CUBE_FACE_NAMES } from "@foss-earth/cubemap/core";
+import { SOURCE_CUBE_FACES, CUBE_FACE_NAMES } from "@foss-earth/sphere-cubemap/core";
 import { cross, dot, normalize, type Vec3 } from "@foss-earth/images";
 import { createCubeTiling, type CubeWarp } from "./cubeTiling.js";
 

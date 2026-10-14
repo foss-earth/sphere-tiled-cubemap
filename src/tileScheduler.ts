@@ -1,5 +1,5 @@
 /**
- * One tiled panorama's scheduler, bounded caches and display table
+ * One tiled sphere's scheduler, bounded caches and display table
  * (benchmarks/eac-progressive-prototype/REPORT.md: "direct replacement").
  * It knows tiles only as ids of a CubeTiling and touches no pixels; it is
  * handed a transport, a decoder, an atlas to upload into and a table to
@@ -12,7 +12,7 @@
  * nothing in between, largest share of the view first; then the tiles only
  * the margin around the view touches. Until a cell's tile arrives, the cell
  * shows the finest resident tile at or below its level, or a finer one, or
- * else the panorama's preview cube, which is always there: nothing is ever a
+ * else the sphere's preview cube, which is always there: nothing is ever a
  * hole.
  *
  * **Bounds.** At most `requests` in flight; no new request while `waiting`
